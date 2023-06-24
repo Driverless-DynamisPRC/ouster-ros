@@ -194,12 +194,16 @@ class OusterSensor : public OusterClientBase {
         auto udp_dest = nh.param("udp_dest", std::string{});
         auto mtp_dest_arg = nh.param("mtp_dest", std::string{});
         auto mtp_main_arg = nh.param("mtp_main", false);
-        auto lidar_port = nh.param("lidar_port", 0);
-        auto imu_port = nh.param("imu_port", 0);
+        auto lidar_port = nh.param("lidar_port", 53342);
+        auto imu_port = nh.param("imu_port", 45555);
         auto lidar_mode_arg = nh.param("lidar_mode", std::string{});
         auto timestamp_mode_arg = nh.param("timestamp_mode", std::string{});
         auto udp_profile_lidar_arg =
             nh.param("udp_profile_lidar", std::string{});
+        auto starting_fov_ = nh.param("starting_fov", 45);
+        auto final_fov_ = nh.param("final_fov", 225);
+        auto lidar_ticks_ = nh.param("lidar_ticks", 90112);
+        auto trigger_delta_ = nh.param("trigger_delta", 53);
 
         if (lidar_port < 0 || lidar_port > 65535) {
             auto error_msg =
@@ -411,15 +415,35 @@ class OusterSensor : public OusterClientBase {
     void create_publishers(ros::NodeHandle& nh) {
         lidar_packet_pub = nh.advertise<PacketMsg>("lidar_packets", 1280);
         imu_packet_pub = nh.advertise<PacketMsg>("imu_packets", 100);
+
+        //camera_trigger publisher
+        trigger_pub_ = nh.advertise<std_msgs::Bool>("/camera_trigger", 1);
     }
 
     void start_connection_loop(ros::NodeHandle& nh) {
         allocate_buffers();
         create_publishers(nh);
+
+        uint32_t H = info.format.pixels_per_column;
+        uint32_t W = info.format.columns_per_frame;
+        upd_profile_lidar_ = info.format.upd_profile_lidar;
+
+        auto& pf = sensor::get_format(info);
+        pf_.reset(&pf);
+        xyz_lut_ = ouster::make_xyz_lut(info);
+        ls_ = ouster::LidarScan(W, H, udp_profile_lidar_);
+        cloud_ = ouster_ros::Cloud(W, H);
+        batch_ = std::make_unique<ouster::ScanBatcher>(ouster::ScanBatcher(W, pf));
+        (*batch_).SetFOV(starting_fov_);
+        (*batch_).SetEncoderTicksPerRevolution(lidar_ticks_);
+        (*batch_).SetEncoderTicksPerRevolution(lidar_ticks_);
+        (*batch_).SetTriggerAngle(trigger_delta_);
+
+        ROS_INFO("SETUP COMPLETED");
         timer_ = nh.createTimer(
             ros::Duration(0),
             [this](const ros::TimerEvent&) {
-                auto& pf = sensor::get_format(info);
+                pf = sensor::get_format(info);
                 connection_loop(*sensor_client, pf);
                 timer_.stop();
                 timer_.start();
@@ -439,13 +463,44 @@ class OusterSensor : public OusterClientBase {
         }
         if (state & sensor::LIDAR_DATA) {
             if (sensor::read_lidar_packet(cli, lidar_packet.buf.data(), pf))
-                lidar_packet_pub.publish(lidar_packet);
+                lidar_handler();
+                //lidar_packet_pub.publish(lidar_packet);
         }
         if (state & sensor::IMU_DATA) {
             if (sensor::read_imu_packet(cli, imu_packet.buf.data(), pf))
                 imu_packet_pub.publish(imu_packet);
         }
     }
+
+    void lidar_handler(){
+        // batcher will return "true" whn the current scan is complete
+        // add a packet to the scan
+        bool scan_end = (*batch_)(packet_buf_.data(), ls_);
+        // trigger camera
+        if ((*batch_).IsToTrigger()) {
+            std_msgs::Bool msg;
+            msg.data = true;
+            trigger_pub_.publish(msg);
+            (*batch_).SetToTrigger(false);
+        }
+        if (scan_end) {
+           // LidarScan provides access to azimuth block data and headers
+            auto ts = ls_.timestamps();
+            auto h = std::find_if(
+                    ts.begin(), ts.end(), [](const auto &h) {
+                        return h.timestamp_ != std::chrono::nanoseconds{0};
+                    });
+            if (h != ts.end()) {
+                ouster::PointsF lut_direction = xyz_lut.direction.cast<float>();
+                ouster::PointsF lut_offset = xyz_lut.offset.cast<float>();
+                ouster::PointsF& points = ouster::PointsF(lut_direction.rows(), lut_offset.cols());;
+                scan_to_cloud_f(points, lut_direction, lut_offset, batch_->GetLastTimestamp(), ls_, cloud_, 0);
+                lider_packet_pub.publish(ouster_ros::cloud_to_cloud_msg(
+                        cloud_, batch_->GetLastTimestamp(), "os_sensor"));
+            }
+        }
+    }
+
 
    private:
     PacketMsg lidar_packet;
@@ -460,6 +515,19 @@ class OusterSensor : public OusterClientBase {
     std::string cached_config;
     std::string mtp_dest;
     bool mtp_main;
+    int starting_fov_;
+    int final_fov_;
+    int lidar_ticks_;
+    int trigger_delta_;
+
+    std::vector<uint8_t> packet_buf_;
+    ouster::LidarScan ls_;
+    ouster_ros::Cloud cloud_;
+    std::unique_ptr<ouster::ScanBatcher> batch_;
+    ouster::XYZLut xyz_lut_;
+    std::shared_ptr<sensor::packet_format> pf_;
+    sensor::sensor_info info;
+    std::string lidar_frame_;
 };
 
 }  // namespace nodelets_os
