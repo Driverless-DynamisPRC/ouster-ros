@@ -94,6 +94,12 @@ class OusterCloud : public nodelet::Nodelet {
         lidar_frame = tf_prefix + "os_lidar";
         auto timestamp_mode_arg = pnh.param("timestamp_mode", std::string{});
         use_ros_time = timestamp_mode_arg == "TIME_FROM_ROS_TIME";
+
+        starting_fov_ = pnh.param("starting_fov", 46);
+        final_fov_ = pnh.param("final_fov", 225);
+        lidar_ticks_ = pnh.param("lidar_ticks", 2048);
+        trigger_delta_ = pnh.param("trigger_delta", 53);
+
     }
 
     void create_metadata_subscriber(ros::NodeHandle& nh) {
@@ -147,6 +153,10 @@ class OusterCloud : public nodelet::Nodelet {
         cloud = ouster_ros::Cloud{W, H};
 
         scan_batcher = std::make_unique<ouster::ScanBatcher>(info);
+
+        (*scan_batcher).SetStartingAngle(starting_fov_);
+        (*scan_batcher).SetEncoderTicksPerRevolution(lidar_ticks_);
+        (*scan_batcher).SetTriggerAngle(trigger_delta_);
     }
 
     void create_publishers(ros::NodeHandle& nh) {
@@ -163,6 +173,8 @@ class OusterCloud : public nodelet::Nodelet {
                 std::string("points") + img_suffix(i), 10);
             lidar_pubs[i] = pub;
         }
+        //camera_trigger publisher
+        trigger_pub_ = nh.advertise<std_msgs::Bool>("/camera_trigger", 1);
     }
 
     void create_subscribers(ros::NodeHandle& nh) {
@@ -298,9 +310,21 @@ class OusterCloud : public nodelet::Nodelet {
         const uint8_t* packet_buf = packet->buf.data();
         static auto frame_ts = extrapolate_frame_ts(
             packet_buf, packet_receive_time);  // first point cloud time
+
+      // CHECK IF TRIGGER HAS TO BE SENT AND SEND IT
+        if((*scan_batcher).IsToTrigger()) {
+          std::cout << "U" << ros::Time::now().nsec <<std::endl;
+          std_msgs::Bool msg;
+          msg.data = true;
+          trigger_pub_.publish(msg);
+          (*scan_batcher).SetToTrigger(false); // Reset trigger
+        }
         if (!(*scan_batcher)(packet_buf, ls)) return;
+
+        // SCAN COMPLETED
         auto scan_ts = compute_scan_ts(ls.timestamp());
-        convert_scan_to_pointcloud_publish(scan_ts, frame_ts);
+        auto ros_time_last = ros::Time().fromNSec((*scan_batcher).GetLastTimestamp().count());
+        convert_scan_to_pointcloud_publish(scan_ts, ros_time_last);
         // set time for next point cloud msg
         frame_ts = extrapolate_frame_ts(packet_buf, packet_receive_time);
     }
@@ -328,6 +352,7 @@ class OusterCloud : public nodelet::Nodelet {
     ros::Subscriber lidar_packet_sub;
     std::vector<ros::Publisher> lidar_pubs;
     ros::Subscriber imu_packet_sub;
+    ros::Publisher trigger_pub_;
     ros::Publisher imu_pub;
     sensor_msgs::PointCloud2::Ptr pc_ptr;
 
@@ -355,6 +380,9 @@ class OusterCloud : public nodelet::Nodelet {
         compute_scan_ts;
     double scan_col_ts_spacing_ns;  // interval or spacing between columns of a
                                     // scan
+
+  double starting_fov_, final_fov_, trigger_delta_;
+  int lidar_ticks_;
 };
 
 }  // namespace nodelets_os

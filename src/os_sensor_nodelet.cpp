@@ -198,6 +198,9 @@ class OusterSensor : public OusterClientBase {
         auto imu_port = nh.param("imu_port", 0);
         auto lidar_mode_arg = nh.param("lidar_mode", std::string{});
         auto timestamp_mode_arg = nh.param("timestamp_mode", std::string{});
+        auto starting_fov = nh.param("starting_fov", 45);
+        auto final_fov = nh.param("final_fov", 225);
+
         auto udp_profile_lidar_arg =
             nh.param("udp_profile_lidar", std::string{});
 
@@ -309,6 +312,8 @@ class OusterSensor : public OusterClientBase {
             config_flags |= ouster::sensor::CONFIG_UDP_DEST_AUTO;
         }
 
+        // Azimuth window
+        config.azimuth_window = config.azimuth_window = std::make_pair<int>(starting_fov * 1000, final_fov * 1000);
         return std::make_pair(config, config_flags);
     }
 

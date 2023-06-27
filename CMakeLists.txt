@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.10.0)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/ouster-sdk/cmake)
 include(DefaultBuildType)
 
+
 # ==== Project Name ====
 project(ouster_ros)
 
@@ -86,6 +87,9 @@ add_library(nodelets_os
 target_link_libraries(nodelets_os ouster_ros ${catkin_LIBRARIES})
 add_dependencies(nodelets_os ${PROJECT_NAME}_gencpp)
 
+#add_executable(sensor src/os_sensor_nodelet.cpp )
+#target_link_libraries(sensor ouster_ros ${catkin_LIBRARIES})
+#add_dependencies(sensor ${PROJECT_NAME}_gencpp)
 # ==== Install ====
 install(
   TARGETS

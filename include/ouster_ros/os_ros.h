@@ -18,6 +18,7 @@
 #include <pcl/point_types.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <std_msgs/Bool.h>
 
 #include <chrono>
 #include <string>
