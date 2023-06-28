@@ -313,7 +313,7 @@ class OusterCloud : public nodelet::Nodelet {
 
       // CHECK IF TRIGGER HAS TO BE SENT AND SEND IT
         if((*scan_batcher).IsToTrigger()) {
-          std::cout << "U" << ros::Time::now().nsec <<std::endl;
+//          std::cout << "U" << ros::Time::now().nsec <<std::endl;
           std_msgs::Bool msg;
           msg.data = true;
           trigger_pub_.publish(msg);
