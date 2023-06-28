@@ -26,13 +26,13 @@
     TIME_FROM_ROS_TIME
     }"/>
   <arg name="metadata" default=" " doc="path to write metadata file when receiving sensor data"/>
-  <arg name="viz" default="true" doc="whether to run a rviz"/>
+  <arg name="viz" default="false" doc="whether to run a rviz"/>
   <arg name="rviz_config" default="$(find ouster_ros)/config/viz.rviz" doc="optional rviz config file"/>
   <arg name="tf_prefix" default=" " doc="namespace for tf transforms"/>
 
   <arg name="starting_fov" default="45" doc="starting_fov [degrees]"/>
   <arg name="final_fov" default="225" doc="final fov [degrees], pointCloud will be send as soon as data packet corresponding to final_fov is received"/>
-  <arg name="lidar_ticks" default="90112" doc="lidar packet profile: LEGACY, RNG19_RFL8_SIG16_NIR16_DUAL, RNG19_RFL8_SIG16_NIR16, RNG15_RFL8_NIR8"/>
+  <arg name="lidar_ticks" default="2048" doc="lidar packet profile: LEGACY, RNG19_RFL8_SIG16_NIR16_DUAL, RNG19_RFL8_SIG16_NIR16, RNG15_RFL8_NIR8"/>
   <arg name="trigger_delta" default="53" doc="lidar packet profile: LEGACY, RNG19_RFL8_SIG16_NIR16_DUAL, RNG19_RFL8_SIG16_NIR16, RNG15_RFL8_NIR8"/>
 
 
