@@ -323,7 +323,7 @@ class OusterCloud : public nodelet::Nodelet {
 
         // SCAN COMPLETED
         auto scan_ts = compute_scan_ts(ls.timestamp());
-        auto ros_time_last = ros::Time().fromNSec((*scan_batcher).GetLastTimestamp().count());
+        auto ros_time_last = ros::Time().now();
         convert_scan_to_pointcloud_publish(scan_ts, ros_time_last);
         // set time for next point cloud msg
         frame_ts = extrapolate_frame_ts(packet_buf, packet_receive_time);
