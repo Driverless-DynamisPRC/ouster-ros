@@ -98,7 +98,7 @@ class OusterCloud : public nodelet::Nodelet {
         starting_fov_ = pnh.param("starting_fov", 46);
         final_fov_ = pnh.param("final_fov", 225);
         lidar_ticks_ = pnh.param("lidar_ticks", 2048);
-        trigger_delta_ = pnh.param("trigger_delta", 53);
+        trigger_delta_ = pnh.param("trigger_delta", 135);
 
     }
 
