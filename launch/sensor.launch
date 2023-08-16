@@ -40,18 +40,24 @@
     doc="request no bond setup when nodelets are created"/>
   <arg if="$(arg no_bond)" name="_no_bond" value="--no-bond"/>
   <arg unless="$(arg no_bond)" name="_no_bond" value="" />
+  <arg name="node_start_delay" default="5.0" />
 
   <group ns="$(arg ouster_ns)">
     <node pkg="nodelet" type="nodelet" name="os_nodelet_mgr"
       output="screen" required="true"
-      launch-prefix="bash -c 'sleep 2; $0 $@' "
+      launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' "
       args="manager"/>
   </group>
+
+  <arg name="node_start_delay2" default="7.0" />
 
   <group ns="$(arg ouster_ns)">
     <node pkg="nodelet" type="nodelet" name="os_node"
       output="screen" required="true"
-      args="load nodelets_os/OusterSensor os_nodelet_mgr $(arg _no_bond)">
+      args="load nodelets_os/OusterSensor os_nodelet_mgr $(arg _no_bond)"
+          launch-prefix="bash -c 'sleep $(arg node_start_delay2); $0 $@' "
+
+    >
       <param name="~/sensor_hostname" type="str" value="$(arg sensor_hostname)"/>
       <param name="~/udp_dest" type="str" value="$(arg udp_dest)"/>
       <param name="~/lidar_port" type="int" value="$(arg lidar_port)"/>
