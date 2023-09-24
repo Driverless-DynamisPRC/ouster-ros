@@ -14,7 +14,7 @@
 
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
-
+#include <std_msgs/msg/bool.hpp>
 #include <algorithm>
 #include <chrono>
 #include <memory>
@@ -63,6 +63,9 @@ class OusterCloud : public OusterProcessingNodeBase {
         declare_parameter<std::string>("proc_mask", "IMU|PCL|SCAN");
         declare_parameter<bool>("use_system_default_qos", false);
         declare_parameter<int>("scan_ring", 0);
+        declare_parameter<double>("starting_fov", 45);
+        declare_parameter<double>("lidar_ticks", 2048);
+        declare_parameter<double>("trigger_delta", 53);
     }
 
     void metadata_handler(
@@ -102,6 +105,9 @@ class OusterCloud : public OusterProcessingNodeBase {
                     imu_pub->publish(imu_msg);
                 });
         }
+
+        //camera_trigger publisher
+        camera_trigger_pub = create_publisher<std_msgs::msg::Bool>("/camera_trigger", selected_qos);
 
         int num_returns = get_n_returns(info);
 
@@ -149,7 +155,17 @@ class OusterCloud : public OusterProcessingNodeBase {
         if (check_token(tokens, "PCL") || check_token(tokens, "SCAN")) {
             lidar_packet_handler = LidarPacketHandler::create_handler(
                 info, processors, timestamp_mode,
-                static_cast<int64_t>(ptp_utc_tai_offset * 1e+9));
+                static_cast<int64_t>(ptp_utc_tai_offset * 1e+9),
+                [this](){
+                    auto msg = std_msgs::msg::Bool();
+                    msg.data = true;
+                    camera_trigger_pub->publish(msg);
+                },
+                get_parameter("starting_fov").as_double(),
+                get_parameter("lidar_ticks").as_double(),
+                get_parameter("trigger_delta").as_double()
+
+            );
             lidar_packet_sub = create_subscription<PacketMsg>(
                 "lidar_packets", selected_qos,
                 [this](const PacketMsg::ConstSharedPtr msg) {
@@ -162,6 +178,7 @@ class OusterCloud : public OusterProcessingNodeBase {
     rclcpp::Subscription<PacketMsg>::SharedPtr imu_packet_sub;
     rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub;
 
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr camera_trigger_pub;
     rclcpp::Subscription<PacketMsg>::SharedPtr lidar_packet_sub;
     std::vector<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr>
         lidar_pubs;

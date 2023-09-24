@@ -10,6 +10,7 @@
 // prevent clang-format from altering the location of "ouster_ros/os_ros.h", the
 // header file needs to be the first include due to PCL_NO_PRECOMPILE flag
 // clang-format off
+#include <std_msgs/msg/bool.hpp>
 #include "ouster_ros/os_ros.h"
 // clang-format on
 
@@ -36,6 +37,9 @@ class OusterDriver : public OusterSensor {
         declare_parameter<std::string>("proc_mask", "IMU|IMG|PCL|SCAN");
         declare_parameter<int>("scan_ring", 0);
         declare_parameter<double>("ptp_utc_tai_offset", -37.0);
+        declare_parameter<double>("starting_fov", 45);
+        declare_parameter<double>("lidar_ticks", 2048);
+        declare_parameter<double>("trigger_delta", 53);
     }
 
     virtual void on_metadata_updated(const sensor::sensor_info& info) override {
@@ -44,6 +48,9 @@ class OusterDriver : public OusterSensor {
     }
 
     virtual void create_publishers() override {
+
+        //camera_trigger publisher
+
         auto proc_mask = get_parameter("proc_mask").as_string();
         auto tokens = parse_tokens(proc_mask, '|');
 
@@ -57,6 +64,8 @@ class OusterDriver : public OusterSensor {
         auto timestamp_mode = get_parameter("timestamp_mode").as_string();
         auto ptp_utc_tai_offset =
             get_parameter("ptp_utc_tai_offset").as_double();
+
+        camera_trigger_pub = create_publisher<std_msgs::msg::Bool>("/camera_trigger", selected_qos);
 
         if (check_token(tokens, "IMU")) {
             imu_pub =
@@ -154,7 +163,15 @@ class OusterDriver : public OusterSensor {
             check_token(tokens, "IMG"))
             lidar_packet_handler = LidarPacketHandler::create_handler(
                 info, processors, timestamp_mode,
-                static_cast<int64_t>(ptp_utc_tai_offset * 1e+9));
+                static_cast<int64_t>(ptp_utc_tai_offset * 1e+9),
+                [this](){
+                    auto msg = std_msgs::msg::Bool();
+                    msg.data = true;
+                    camera_trigger_pub->publish(msg);
+                },
+                get_parameter("starting_fov").as_double(),
+        get_parameter("lidar_ticks").as_double(),
+        get_parameter("trigger_delta").as_double());
     }
 
     virtual void on_lidar_packet_msg(const uint8_t* raw_lidar_packet) override {
@@ -187,6 +204,7 @@ class OusterDriver : public OusterSensor {
     std::map<sensor::ChanField,
              rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr>
         image_pubs;
+    rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr camera_trigger_pub;
     ImuPacketHandler::HandlerType imu_packet_handler;
     LidarPacketHandler::HandlerType lidar_packet_handler;
 };

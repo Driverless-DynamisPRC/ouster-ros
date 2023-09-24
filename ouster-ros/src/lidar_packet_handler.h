@@ -91,11 +91,15 @@ class LidarPacketHandler {
     using HandlerType = std::function<void(const uint8_t*)>;
 
    public:
-    LidarPacketHandler(const ouster::sensor::sensor_info& info,
+        LidarPacketHandler(const ouster::sensor::sensor_info& info,
                        const std::vector<LidarScanProcessor>& handlers,
                        const std::string& timestamp_mode,
-                       int64_t ptp_utc_tai_offset)
-        : lidar_scan_handlers{handlers} {
+                       int64_t ptp_utc_tai_offset,
+                       const std::function<void()>& camera_trigger_handler,
+                       double starting_fov,
+                       double lidar_ticks,
+                       double trigger_delta)
+        : lidar_scan_handlers{handlers}{
         // initialize lidar_scan processor and buffer
         scan_batcher = std::make_unique<ouster::ScanBatcher>(info);
         lidar_scan = std::make_unique<ouster::LidarScan>(
@@ -111,8 +115,8 @@ class LidarPacketHandler {
 
         if (timestamp_mode == "TIME_FROM_ROS_TIME") {
             lidar_packet_accumlator =
-                LidarPacketAccumlator{[this, pf](const uint8_t* lidar_buf) {
-                    return lidar_handler_ros_time(pf, lidar_buf);
+                LidarPacketAccumlator{[this, pf, &camera_trigger_handler](const uint8_t* lidar_buf) {
+                    return lidar_handler_ros_time(pf, lidar_buf, camera_trigger_handler);
                 }};
         } else if (timestamp_mode == "TIME_FROM_PTP_1588") {
             lidar_packet_accumlator = LidarPacketAccumlator{
@@ -126,6 +130,10 @@ class LidarPacketHandler {
                     return lidar_handler_sensor_time(pf, lidar_buf);
                 }};
         }
+
+        scan_batcher->SetStartingAngle(starting_fov);
+        scan_batcher->SetEncoderTicksPerRevolution(lidar_ticks);
+        scan_batcher->SetTriggerAngle(trigger_delta);
     }
 
     LidarPacketHandler(const LidarPacketHandler&) = delete;
@@ -142,9 +150,14 @@ class LidarPacketHandler {
     static HandlerType create_handler(
         const ouster::sensor::sensor_info& info,
         const std::vector<LidarScanProcessor>& handlers,
-        const std::string& timestamp_mode, int64_t ptp_utc_tai_offset) {
+        const std::string& timestamp_mode, int64_t ptp_utc_tai_offset,
+        const std::function<void()>& camera_trigger_handler,
+        double starting_fov,
+        double lidar_ticks,
+        double trigger_delta) {
         auto handler = std::make_shared<LidarPacketHandler>(
-            info, handlers, timestamp_mode, ptp_utc_tai_offset);
+            info, handlers, timestamp_mode, ptp_utc_tai_offset, camera_trigger_handler, starting_fov,
+                lidar_ticks, trigger_delta);
         return [handler](const uint8_t* lidar_buf) {
             if (handler->lidar_packet_accumlator(lidar_buf)) {
                 for (auto h : handler->lidar_scan_handlers) {
@@ -262,19 +275,26 @@ class LidarPacketHandler {
     }
 
     bool lidar_handler_ros_time(const sensor::packet_format& pf,
-                                const uint8_t* lidar_buf) {
+                                const uint8_t* lidar_buf,
+                                const std::function<void()>& camera_trigger_handler) {
         auto packet_receive_time = rclcpp::Clock(RCL_ROS_TIME).now();
         if (!lidar_handler_ros_time_frame_ts_initialized) {
             lidar_handler_ros_time_frame_ts = extrapolate_frame_ts(
                 pf, lidar_buf, packet_receive_time);  // first point cloud time
             lidar_handler_ros_time_frame_ts_initialized = true;
         }
+        if(scan_batcher->IsToTrigger()){
+            camera_trigger_handler();
+            scan_batcher->SetToTrigger(false);
+        }
         if (!(*scan_batcher)(lidar_buf, *lidar_scan)) return false;
         lidar_scan_estimated_ts = compute_scan_ts(lidar_scan->timestamp());
         lidar_scan_estimated_msg_ts = lidar_handler_ros_time_frame_ts;
+        lidar_scan_estimated_msg_ts = rclcpp::Clock(RCL_ROS_TIME).now();;
         // set time for next point cloud msg
         lidar_handler_ros_time_frame_ts =
             extrapolate_frame_ts(pf, lidar_buf, packet_receive_time);
+
         return true;
     }
 

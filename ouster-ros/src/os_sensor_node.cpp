@@ -50,6 +50,8 @@ void OusterSensor::declare_parameters() {
     declare_parameter<std::string>("lidar_mode", "");
     declare_parameter<std::string>("timestamp_mode", "");
     declare_parameter<std::string>("udp_profile_lidar", "");
+    declare_parameter<double>("starting_fov", 45);
+    declare_parameter<double>("ending_fov", 225);
     declare_parameter("use_system_default_qos", false);
 }
 
@@ -435,6 +437,8 @@ sensor::sensor_config OusterSensor::parse_config_from_ros_parameters() {
     auto lidar_mode_arg = get_parameter("lidar_mode").as_string();
     auto timestamp_mode_arg = get_parameter("timestamp_mode").as_string();
     auto udp_profile_lidar_arg = get_parameter("udp_profile_lidar").as_string();
+    auto starting_fov_arg = get_parameter("starting_fov").as_double();
+    auto ending_fov_arg = get_parameter("ending_fov").as_double();
 
     if (lidar_port < 0 || lidar_port > 65535) {
         auto error_msg =
@@ -528,6 +532,9 @@ sensor::sensor_config OusterSensor::parse_config_from_ros_parameters() {
             mtp_main = mtp_main_arg;
         }
     }
+
+    config.azimuth_window = std::make_pair<int>(starting_fov_arg * 1000, ending_fov_arg * 1000);
+
 
     return config;
 }

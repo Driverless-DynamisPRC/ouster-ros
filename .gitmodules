@@ -1,3 +1,5 @@
 [submodule "ouster-sdk"]
 	path = ouster-sdk
 	url = https://github.com/Driverless-DynamisPRC/ouster_example.git
+[submodule "ouster-ros/ouster-sdk"]
+	url = https://github.com/Driverless-DynamisPRC/ouster_example.git
