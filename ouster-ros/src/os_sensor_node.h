@@ -18,6 +18,7 @@
 #include <vector>
 
 #include <std_srvs/srv/empty.hpp>
+#include <std_msgs/msg/empty.hpp>
 #include <lifecycle_msgs/msg/transition.hpp>
 #include <lifecycle_msgs/srv/change_state.hpp>
 #include "ouster_sensor_msgs/msg/packet_msg.hpp"
@@ -142,6 +143,10 @@ class OusterSensor : public OusterSensorNodeBase {
     void stop_packet_processing_threads();
 
    private:
+    void lidar_packet_callback(const uint8_t* raw_lidar_packet, const sensor::packet_format& pf);
+    void handle_trigger(const uint8_t* raw_lidar_packet, const sensor::packet_format& pf);
+    uint16_t angle_to_measurement_id(const float angle_deg) const;
+    uint16_t prev_last_col_m_id = 0;
     std::string sensor_hostname;
     std::string staged_config;
     std::string active_config;
@@ -152,6 +157,7 @@ class OusterSensor : public OusterSensorNodeBase {
     ouster_sensor_msgs::msg::PacketMsg imu_packet;
     rclcpp::Publisher<ouster_sensor_msgs::msg::PacketMsg>::SharedPtr lidar_packet_pub;
     rclcpp::Publisher<ouster_sensor_msgs::msg::PacketMsg>::SharedPtr imu_packet_pub;
+    rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr camera_trigger_pub;
     rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_srv;
     rclcpp::Service<ouster_sensor_msgs::srv::GetConfig>::SharedPtr get_config_srv;
     rclcpp::Service<ouster_sensor_msgs::srv::SetConfig>::SharedPtr set_config_srv;

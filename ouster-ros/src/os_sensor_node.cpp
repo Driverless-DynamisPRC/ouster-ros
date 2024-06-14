@@ -31,6 +31,7 @@ OusterSensor::OusterSensor(const std::string& name,
       change_state_client{
           create_client<ChangeState>(get_name() + "/change_state"s)} {
     declare_parameters();
+    camera_trigger_pub = create_publisher<std_msgs::msg::Empty>("camera_trigger", 1);
 }
 
 OusterSensor::OusterSensor(const rclcpp::NodeOptions& options)
@@ -60,6 +61,13 @@ void OusterSensor::declare_parameters() {
     declare_parameter("timestamp_mode", "");
     declare_parameter("udp_profile_lidar", "");
     declare_parameter("use_system_default_qos", false);
+
+    rcl_interfaces::msg::FloatingPointRange trigger_angle_range;
+    trigger_angle_range.from_value = 0.1;
+    trigger_angle_range.to_value = 359.9;
+    rcl_interfaces::msg::ParameterDescriptor trigger_angle_descriptor;
+    trigger_angle_descriptor.floating_point_range.push_back(trigger_angle_range);
+    declare_parameter("trigger_angle", 180.0, trigger_angle_descriptor);
 }
 
 LifecycleNodeInterface::CallbackReturn OusterSensor::on_configure(
@@ -808,9 +816,10 @@ void OusterSensor::start_packet_processing_threads() {
 
     lidar_packets_processing_thread_active = true;
     lidar_packets_processing_thread = std::make_unique<std::thread>([this]() {
+        const sensor::packet_format &pf = sensor::get_format(info);
         while (lidar_packets_processing_thread_active) {
-            lidar_packets->read_timeout([this](const uint8_t* buffer) {
-                if (buffer != nullptr) on_lidar_packet_msg(buffer);
+            lidar_packets->read_timeout([this, &pf](const uint8_t* buffer) {
+                if (buffer != nullptr) lidar_packet_callback(buffer, pf);
             }, 1s);
         }
         RCLCPP_DEBUG(get_logger(), "lidar_packets_processing_thread done.");
@@ -848,6 +857,30 @@ void OusterSensor::on_imu_packet_msg(const uint8_t* raw_imu_packet) {
     // now we are focusing on optimizing the code for OusterDriver
     std::memcpy(imu_packet.buf.data(), raw_imu_packet, imu_packet.buf.size());
     imu_packet_pub->publish(imu_packet);
+}
+
+void OusterSensor::lidar_packet_callback(const uint8_t* raw_lidar_packet, const sensor::packet_format& pf) {
+    on_lidar_packet_msg(raw_lidar_packet);
+    handle_trigger(raw_lidar_packet, pf);
+}
+
+void OusterSensor::handle_trigger(const uint8_t* raw_lidar_packet, const sensor::packet_format& pf) {
+    const float trigger_angle = static_cast<float>(get_parameter("trigger_angle").as_double());
+    const uint16_t trigger_m_id = angle_to_measurement_id(trigger_angle);
+
+    const uint8_t* last_col_buf = pf.nth_col(pf.columns_per_packet - 1, raw_lidar_packet);
+    const uint16_t last_col_m_id = pf.col_measurement_id(last_col_buf);
+
+    bool trigger = last_col_m_id >= trigger_m_id && prev_last_col_m_id < trigger_m_id;
+    prev_last_col_m_id = last_col_m_id;
+    if (trigger) {
+        camera_trigger_pub->publish(std_msgs::msg::Empty());
+    }
+}
+
+uint16_t OusterSensor::angle_to_measurement_id(const float angle_deg) const {
+    const float angle_rad = angle_deg / 180.0 * M_PI;
+    return static_cast<uint16_t>(info.format.columns_per_frame * (1 - angle_rad / (2.0 * M_PI)));
 }
 
 }  // namespace ouster_ros
