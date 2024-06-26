@@ -88,7 +88,11 @@ class OusterDriver : public OusterSensor {
                 PointCloudProcessorFactory::create_point_cloud_processor(point_type, info,
                     tf_bcast.point_cloud_frame_id(), tf_bcast.apply_lidar_to_sensor_transform(),
                     [this](PointCloudProcessor_OutputType msgs) {
-                        for (size_t i = 0; i < msgs.size(); ++i) lidar_pubs[i]->publish(*msgs[i]);
+                        for (size_t i = 0; i < msgs.size(); ++i)
+                        {
+                            msgs[i]->header.stamp = this->now();
+                            lidar_pubs[i]->publish(*msgs[i]);
+                        }
                     }
                 )
             );
