@@ -1,0 +1,52 @@
+[1mdiff --git a/ouster-ros/config/driver_params.yaml b/ouster-ros/config/driver_params.yaml[m
+[1mindex be86c67..aba578a 100644[m
+[1m--- a/ouster-ros/config/driver_params.yaml[m
+[1m+++ b/ouster-ros/config/driver_params.yaml[m
+[36m@@ -16,7 +16,7 @@[m [mouster/os_driver:[m
+     # lidar_mode[optional]: resolution and rate; possible values: { 512x10,[m
+     # 512x20, 1024x10, 1024x20, 2048x10, 4096x5 }. Leave empty to remain on[m
+     # current the lidar mode.[m
+[31m-    lidar_mode: ''[m
+[32m+[m[32m    lidar_mode: '2048x10'[m
+     # timestamp_mode[optional]: method used to timestamp measurements; possible[m
+     # values:[m
+     # - TIME_FROM_INTERNAL_OSC[m
+[36m@@ -25,7 +25,7 @@[m [mouster/os_driver:[m
+     # - TIME_FROM_ROS_TIME: This option uses the time of reception of first[m
+     #                       packet of a LidarScan as the timestamp of the IMU,[m
+     #                       PointCloud2 and LaserScan messages.[m
+[31m-    timestamp_mode: ''[m
+[32m+[m[32m    timestamp_mode: 'TIME_FROM_ROS_TIME'[m
+     # ptp_utc_tai_offset[optional]: UTC/TAI offset in seconds to apply when[m
+     # TIME_FROM_PTP_1588 timestamp mode is used.[m
+     ptp_utc_tai_offset: -37.0[m
+[36m@@ -35,7 +35,7 @@[m [mouster/os_driver:[m
+     # - RNG15_RFL8_NIR8[m
+     # - RNG19_RFL8_SIG16_NIR16_DUAL[m
+     # - FUSA_RNG15_RFL8_NIR8_DUAL[m
+[31m-    udp_profile_lidar: ''[m
+[32m+[m[32m    udp_profile_lidar: 'RNG15_RFL8_NIR8'[m
+     # metadata[optional]: path to save metadata file to, if left empty a file[m
+     # with the sensor hostname or ip will be crearted in ~/.ros folder.[m
+     metadata: ''[m
+[36m@@ -87,4 +87,4 @@[m [mouster/os_driver:[m
+     # - ouster_ros/sensor_point_types.h[m
+     # - ouster_ros/common_point_types.h.[m
+     point_type: original[m
+[31m-    trigger_angle: 180.0 # angle in degrees at which to publish camera[m
+\ No newline at end of file[m
+[32m+[m[32m    trigger_angle: 250.0 # angle in degrees at which to publish camera[m
+\ No newline at end of file[m
+[1mdiff --git a/ouster-ros/launch/driver.launch.py b/ouster-ros/launch/driver.launch.py[m
+[1mindex 9da3b1b..4b285e0 100644[m
+[1m--- a/ouster-ros/launch/driver.launch.py[m
+[1m+++ b/ouster-ros/launch/driver.launch.py[m
+[36m@@ -37,7 +37,7 @@[m [mdef generate_launch_description():[m
+         'ouster_ns', default_value='ouster')[m
+ [m
+     rviz_enable = LaunchConfiguration('viz')[m
+[31m-    rviz_enable_arg = DeclareLaunchArgument('viz', default_value='True')[m
+[32m+[m[32m    rviz_enable_arg = DeclareLaunchArgument('viz', default_value='False')[m
+ [m
+     os_driver_name = LaunchConfiguration('os_driver_name')[m
+     os_driver_name_arg = DeclareLaunchArgument([m
