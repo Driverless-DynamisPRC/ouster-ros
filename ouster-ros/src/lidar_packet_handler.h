@@ -79,6 +79,7 @@ class LidarPacketHandler {
         : ring_buffer(LIDAR_SCAN_COUNT), lidar_scan_handlers{handlers} {
         // initialize lidar_scan processor and buffer
         scan_batcher = std::make_unique<ouster::ScanBatcher>(info);
+        scan_batcher->set_fire_angle(static_cast<double>((info.config.azimuth_window->first) / 1000.0) + 1.0);
 
         lidar_scans.resize(LIDAR_SCAN_COUNT);
         mutexes.resize(LIDAR_SCAN_COUNT);

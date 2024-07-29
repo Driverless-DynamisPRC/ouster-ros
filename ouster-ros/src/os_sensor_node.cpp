@@ -61,6 +61,7 @@ void OusterSensor::declare_parameters() {
     declare_parameter("timestamp_mode", "");
     declare_parameter("udp_profile_lidar", "");
     declare_parameter("use_system_default_qos", false);
+    declare_parameter("azimuth_window", std::vector<int>{0, 360000});
 
     rcl_interfaces::msg::FloatingPointRange trigger_angle_range;
     trigger_angle_range.from_value = 0.1;
@@ -451,6 +452,7 @@ sensor::sensor_config OusterSensor::parse_config_from_ros_parameters() {
     auto lidar_mode_arg = get_parameter("lidar_mode").as_string();
     auto timestamp_mode_arg = get_parameter("timestamp_mode").as_string();
     auto udp_profile_lidar_arg = get_parameter("udp_profile_lidar").as_string();
+    auto azimuth_window_arg = get_parameter("azimuth_window").as_integer_array();
 
     if (lidar_port < 0 || lidar_port > 65535) {
         auto error_msg =
@@ -544,6 +546,8 @@ sensor::sensor_config OusterSensor::parse_config_from_ros_parameters() {
             mtp_main = mtp_main_arg;
         }
     }
+
+    config.azimuth_window = std::make_pair<int, int>(azimuth_window_arg[0], azimuth_window_arg[1]);
 
     return config;
 }

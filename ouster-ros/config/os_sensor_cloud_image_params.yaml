@@ -4,11 +4,11 @@
 # and utilize the driver_params.yaml along with it. 
 ouster/os_sensor:
   ros__parameters:
-    sensor_hostname: ''
+    sensor_hostname: 'os-122319002122.local'
     udp_dest: ''
     mtp_dest: ''
     mtp_main: false
-    lidar_mode: ''
+    lidar_mode: '1024x10'
     timestamp_mode: ''
     udp_profile_lidar: ''
     metadata: ''
@@ -16,6 +16,7 @@ ouster/os_sensor:
     imu_port: 0
     use_system_default_qos: False
     trigger_angle: 180.0 # angle in degrees at which to publish camera trigger
+    azimuth_window: [90000, 270000]
 ouster/os_cloud:
   ros__parameters:
     sensor_frame: os_sensor
@@ -30,4 +31,5 @@ ouster/os_cloud:
                   # value the range [0, sensor_beams_count)
     point_type: original # choose from: {original, native, xyz, xyzi, xyzir}
 ouster/os_image:
+  ros__parameters:
     use_system_default_qos: False # needs to match the value defined for os_sensor node

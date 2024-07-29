@@ -88,3 +88,4 @@ ouster/os_driver:
     # - ouster_ros/common_point_types.h.
     point_type: original
     trigger_angle: 250.0 # angle in degrees at which to publish camera
+    azimuth_window: [90000, 270000]
