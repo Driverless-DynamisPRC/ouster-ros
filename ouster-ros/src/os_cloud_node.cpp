@@ -61,6 +61,8 @@ class OusterCloud : public OusterProcessingNodeBase {
         declare_parameter("use_system_default_qos", false);
         declare_parameter("scan_ring", 0);
         declare_parameter("point_type", "original");
+        declare_parameter("horizon_window_start", MIN_HOW);
+        declare_parameter("horizon_window_end", MAX_HOW);
         declare_parameter("organized", true);
         declare_parameter("destagger", true);
         declare_parameter("min_range", 0.0);

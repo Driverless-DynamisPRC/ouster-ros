@@ -41,6 +41,8 @@ class OusterImage : public OusterProcessingNodeBase {
     void on_init() {
         declare_parameter("timestamp_mode", "");
         declare_parameter("ptp_utc_tai_offset", -37.0);
+        declare_parameter("horizon_window_start", MIN_HOW);
+        declare_parameter("horizon_window_end", MAX_HOW);
         declare_parameter("use_system_default_qos", false);
         declare_parameter("min_scan_valid_columns_ratio", 0.0);
         create_metadata_subscriber(

@@ -126,7 +126,10 @@ void scan_to_cloud_f(ouster_ros::Cloud<PointT>& cloud, PointS& staging_point,
     auto ls_tuple = make_lidar_scan_tuple<0, N, PROFILE>(ls);
     auto timestamp = ls.timestamp();
 
-    if (!organized) cloud.clear();
+    if (!organized) {
+        cloud.clear();
+        cloud.reserve(points.size());
+    }
     cloud.is_dense = true;
 
     for (auto u = 0; u < ls.h; u += rows_step) {

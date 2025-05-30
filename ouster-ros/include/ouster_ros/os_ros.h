@@ -32,6 +32,12 @@ namespace ouster_ros {
 
 namespace sensor = ouster::sensor;
 
+static constexpr int64_t MIN_AZW = 0;
+static constexpr int64_t MAX_AZW = 360000;
+
+static constexpr int64_t MIN_HOW = -180000;
+static constexpr int64_t MAX_HOW = +180000;
+
 /**
  * Checks sensor_info if it currently represents a legacy udp lidar profile
  * @param[in] info sensor_info

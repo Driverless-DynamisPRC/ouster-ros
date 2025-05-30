@@ -172,9 +172,10 @@ class OusterSensor : public OusterSensorNodeBase {
     const int max_read_imu_packet_errors = 60;
     int read_imu_packet_errors = 0;
 
-    const int MIN_AZW = 0;
-    const int MAX_AZW = 360000;
+   protected:
+    std::pair<int64_t, int64_t> horizon_window;
 
+   private:
     bool attempt_reconnect;
     double dormant_period_between_reconnects;
     int reconnect_attempts_available;

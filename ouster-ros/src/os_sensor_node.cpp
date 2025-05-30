@@ -78,6 +78,8 @@ void OusterSensor::declare_parameters() {
     declare_parameter("use_system_default_qos", false);
     declare_parameter("azimuth_window_start", MIN_AZW);
     declare_parameter("azimuth_window_end", MAX_AZW);
+    declare_parameter("horizon_window_start", MIN_HOW);
+    declare_parameter("horizon_window_end", MAX_HOW);
     declare_parameter("persist_config", false);
     declare_parameter("attempt_reconnect", false);
     declare_parameter("dormant_period_between_reconnects", 1.0);
@@ -456,6 +458,8 @@ sensor::sensor_config OusterSensor::parse_config_from_ros_parameters() {
     auto udp_profile_lidar_arg = get_parameter("udp_profile_lidar").as_string();
     auto azimuth_window_start = get_parameter("azimuth_window_start").as_int();
     auto azimuth_window_end = get_parameter("azimuth_window_end").as_int();
+    auto horizon_window_start = get_parameter("horizon_window_start").as_int();
+    auto horizon_window_end = get_parameter("horizon_window_end").as_int();
 
     if (lidar_port < 0 || lidar_port > 65535) {
         auto error_msg =
@@ -568,6 +572,16 @@ sensor::sensor_config OusterSensor::parse_config_from_ros_parameters() {
     }
 
     config.azimuth_window = {azimuth_window_start, azimuth_window_end};
+
+    if (horizon_window_start < MIN_HOW || horizon_window_start > MAX_HOW ||
+        horizon_window_end < MIN_HOW || horizon_window_end > MAX_HOW) {
+        auto error_msg = "horizon window values must be between " +
+                    std::to_string(MIN_HOW) + " and " + std::to_string(MAX_HOW);
+        RCLCPP_FATAL_STREAM(get_logger(), error_msg);
+        throw std::runtime_error(error_msg);
+    }
+
+    horizon_window = {horizon_window_start, horizon_window_end};
 
     return config;
 }
