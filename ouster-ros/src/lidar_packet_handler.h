@@ -128,9 +128,9 @@ class LidarPacketHandler {
                 }
                 bool result = false;
                 {
-                    std::unique_lock<std::mutex> lock(
-                        *(mutexes[ring_buffer.write_head()]));
-                    auto& lidar_scan = *lidar_scans[ring_buffer.write_head()];
+                    const auto write_head = ring_buffer.write_head();
+                    std::unique_lock<std::mutex> lock(*(mutexes[write_head]));
+                    auto& lidar_scan = *lidar_scans[write_head];
                     result = lidar_handler(*this, pf, lidar_packet, lidar_scan);
                     if (result) {
                         // count the number of valid columns in the scan
@@ -203,11 +203,12 @@ class LidarPacketHandler {
             if (ring_buffer.empty()) return;
         }
 
-        std::unique_lock<std::mutex> lock(*mutexes[ring_buffer.read_head()]);
+        const auto read_head = ring_buffer.read_head();
+        std::unique_lock<std::mutex> lock(*mutexes[read_head]);
 
-        for (auto h : lidar_scan_handlers) {
-            h(*lidar_scans[ring_buffer.read_head()], lidar_scan_estimated_ts,
-              lidar_scan_estimated_msg_ts);
+        const auto& lidar_scan = *lidar_scans[read_head];
+        for (auto& h : lidar_scan_handlers) {
+            h(lidar_scan, lidar_scan_estimated_ts, lidar_scan_estimated_msg_ts);
         }
 
         // when we hit percent amount of the ring_buffer capacity throttle
