@@ -151,6 +151,11 @@ class LidarPacketHandler {
                 }
                 return result;
             }};
+
+        passes_through_zero =
+            info.format.column_window.first == 0 ||
+            info.format.column_window.second == 0 ||
+            info.format.column_window.second < info.format.column_window.first;
     }
 
     LidarPacketHandler(const LidarPacketHandler&) = delete;
@@ -331,7 +336,7 @@ class LidarPacketHandler {
                                 ouster::LidarScan& lidar_scan) {
         auto packet_receive_time = rclcpp::Time(lidar_packet.host_timestamp);
 
-        if (!lidar_handler_ros_time_frame_ts) {
+        if (passes_through_zero && !lidar_handler_ros_time_frame_ts) {
             lidar_handler_ros_time_frame_ts = extrapolate_frame_ts(
                 pf, lidar_packet.buf.data(),
                 packet_receive_time);  // first point cloud time
@@ -339,10 +344,17 @@ class LidarPacketHandler {
 
         if (!(*scan_batcher)(lidar_packet, lidar_scan)) return false;
         lidar_scan_estimated_ts = compute_scan_ts(lidar_scan.timestamp());
-        lidar_scan_estimated_msg_ts = lidar_handler_ros_time_frame_ts.value();
-        // set time for next point cloud msg
-        lidar_handler_ros_time_frame_ts = extrapolate_frame_ts(
-            pf, lidar_packet.buf.data(), packet_receive_time);
+
+        if (passes_through_zero) {
+            lidar_scan_estimated_msg_ts = lidar_handler_ros_time_frame_ts.value();
+            // set time for next point cloud msg
+            lidar_handler_ros_time_frame_ts = extrapolate_frame_ts(
+                pf, lidar_packet.buf.data(), packet_receive_time);
+        } else {
+            lidar_scan_estimated_msg_ts = extrapolate_frame_ts(
+                pf, lidar_packet.buf.data(), packet_receive_time);
+        }
+
         return true;
     }
 
@@ -365,6 +377,7 @@ class LidarPacketHandler {
     uint64_t lidar_scan_estimated_ts;
     rclcpp::Time lidar_scan_estimated_msg_ts;
 
+    bool passes_through_zero;
     std::optional<rclcpp::Time> lidar_handler_ros_time_frame_ts;
 
     int last_scan_last_nonzero_idx = -1;
