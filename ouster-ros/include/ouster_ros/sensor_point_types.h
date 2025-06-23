@@ -48,6 +48,7 @@ struct EIGEN_ALIGN16 _Point_LEGACY {
     PCL_ADD_POINT4D;
     uint32_t t;             // timestamp in nanoseconds relative to frame start
     uint16_t ring;          // equivalent to channel
+    uint16_t col;
     uint32_t range;
     uint32_t signal;        // equivalent to intensity
     uint32_t reflectivity;
@@ -60,7 +61,7 @@ struct Point_LEGACY : public _Point_LEGACY {
     inline Point_LEGACY(const _Point_LEGACY& pt)
     {
       x = pt.x; y = pt.y; z = pt.z; data[3] = 1.0f;
-      t = pt.t; ring = pt.ring;
+      t = pt.t; ring = pt.ring; col = pt.col;
       range = pt.range; signal = pt.signal;
       reflectivity = pt.reflectivity; near_ir = pt.near_ir;
     }
@@ -68,17 +69,17 @@ struct Point_LEGACY : public _Point_LEGACY {
     inline Point_LEGACY()
     {
       x = y = z = 0.0f; data[3] = 1.0f;
-      t = 0; ring = 0;
+      t = 0; ring = 0; col = 0;
       range = 0; signal = 0;
       reflectivity = 0; near_ir = 0;
     }
 
     inline const auto as_tuple() const {
-        return std::tie(x, y, z, t, ring, range, signal, reflectivity, near_ir);
+        return std::tie(x, y, z, t, ring, col, range, signal, reflectivity, near_ir);
     }
 
     inline auto as_tuple() {
-        return std::tie(x, y, z, t, ring, range, signal, reflectivity, near_ir);
+        return std::tie(x, y, z, t, ring, col, range, signal, reflectivity, near_ir);
     }
 
     template<size_t I>
@@ -97,6 +98,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point_LEGACY,
     (float, z, z)
     (std::uint32_t, t, t)
     (std::uint16_t, ring, ring)
+    (std::uint16_t, col, col)
     (std::uint32_t, range, range)
     (std::uint32_t, signal, signal)
     (std::uint32_t, reflectivity, reflectivity)
@@ -135,6 +137,7 @@ struct EIGEN_ALIGN16 _Point_RNG19_RFL8_SIG16_NIR16_DUAL {
     PCL_ADD_POINT4D;
     uint32_t t;             // timestamp in nanoseconds relative to frame start
     uint16_t ring;          // equivalent channel
+    uint16_t col;
     uint32_t range;
     uint16_t signal;        // equivalent to intensity
     uint8_t reflectivity;
@@ -147,7 +150,7 @@ struct Point_RNG19_RFL8_SIG16_NIR16_DUAL : public _Point_RNG19_RFL8_SIG16_NIR16_
     inline Point_RNG19_RFL8_SIG16_NIR16_DUAL(const _Point_RNG19_RFL8_SIG16_NIR16_DUAL& pt)
     {
       x = pt.x; y = pt.y; z = pt.z; data[3] = 1.0f;
-      t = pt.t; ring = pt.ring;
+      t = pt.t; ring = pt.ring; col = pt.col;
       range = pt.range; signal = pt.signal;
       reflectivity = pt.reflectivity; near_ir = pt.near_ir;
     }
@@ -155,17 +158,17 @@ struct Point_RNG19_RFL8_SIG16_NIR16_DUAL : public _Point_RNG19_RFL8_SIG16_NIR16_
     inline Point_RNG19_RFL8_SIG16_NIR16_DUAL()
     {
       x = y = z = 0.0f; data[3] = 1.0f;
-      t = 0; ring = 0;
+      t = 0; ring = 0; col = 0;
       range = 0; signal = 0;
       reflectivity = 0; near_ir = 0;
     }
 
     inline const auto as_tuple() const {
-        return std::tie(x, y, z, t, ring, range, signal, reflectivity, near_ir);
+        return std::tie(x, y, z, t, ring, col, range, signal, reflectivity, near_ir);
     }
 
     inline auto as_tuple() {
-        return std::tie(x, y, z, t, ring, range, signal, reflectivity, near_ir);
+        return std::tie(x, y, z, t, ring, col, range, signal, reflectivity, near_ir);
     }
 
     template<size_t I>
@@ -184,6 +187,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point_RNG19_RFL8_SIG16_NIR16_DUAL,
     (float, z, z)
     (std::uint32_t, t, t)
     (std::uint16_t, ring, ring)
+    (std::uint16_t, col, col)
     (std::uint32_t, range, range)
     (std::uint16_t, signal, signal)
     (std::uint8_t, reflectivity, reflectivity)
@@ -207,6 +211,7 @@ struct EIGEN_ALIGN16 _Point_RNG19_RFL8_SIG16_NIR16 {
     PCL_ADD_POINT4D;
     uint32_t t;             // timestamp in nanoseconds relative to frame start
     uint16_t ring;          // equivalent channel
+    uint16_t col;
     uint32_t range;
     uint16_t signal;        // equivalent to intensity
     uint16_t reflectivity;
@@ -219,7 +224,7 @@ struct Point_RNG19_RFL8_SIG16_NIR16 : public _Point_RNG19_RFL8_SIG16_NIR16 {
     inline Point_RNG19_RFL8_SIG16_NIR16(const _Point_RNG19_RFL8_SIG16_NIR16& pt)
     {
       x = pt.x; y = pt.y; z = pt.z; data[3] = 1.0f;
-      t = pt.t; ring = pt.ring;
+      t = pt.t; ring = pt.ring; col = pt.col;
       range = pt.range; signal = pt.signal;
       reflectivity = pt.reflectivity; near_ir = pt.near_ir;
     }
@@ -227,17 +232,17 @@ struct Point_RNG19_RFL8_SIG16_NIR16 : public _Point_RNG19_RFL8_SIG16_NIR16 {
     inline Point_RNG19_RFL8_SIG16_NIR16()
     {
       x = y = z = 0.0f; data[3] = 1.0f;
-      t = 0; ring = 0;
+      t = 0; ring = 0; col = 0;
       range = 0; signal = 0;
       reflectivity = 0; near_ir = 0;
     }
 
     inline const auto as_tuple() const {
-        return std::tie(x, y, z, t, ring, range, signal, reflectivity, near_ir);
+        return std::tie(x, y, z, t, ring, col, range, signal, reflectivity, near_ir);
     }
 
     inline auto as_tuple() {
-        return std::tie(x, y, z, t, ring, range, signal, reflectivity, near_ir);
+        return std::tie(x, y, z, t, ring, col, range, signal, reflectivity, near_ir);
     }
 
     template<size_t I>
@@ -256,6 +261,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point_RNG19_RFL8_SIG16_NIR16,
     (float, z, z)
     (std::uint32_t, t, t)
     (std::uint16_t, ring, ring)
+    (std::uint16_t, col, col)
     (std::uint32_t, range, range)
     (std::uint16_t, signal, signal)
     (std::uint16_t, reflectivity, reflectivity)
@@ -279,6 +285,7 @@ struct EIGEN_ALIGN16 _Point_RNG15_RFL8_NIR8 {
     // No signal/intensity in low data mode
     uint32_t t;             // timestamp in nanoseconds relative to frame start
     uint16_t ring;          // equivalent to channel
+    uint16_t col;
     uint32_t range;
     uint16_t reflectivity;
     uint16_t near_ir;       // equivalent to ambient
@@ -290,7 +297,7 @@ struct Point_RNG15_RFL8_NIR8 : public _Point_RNG15_RFL8_NIR8 {
 
     inline Point_RNG15_RFL8_NIR8(const _Point_RNG15_RFL8_NIR8& pt) {
       x = pt.x; y = pt.y; z = pt.z; data[3] = 1.0f;
-      t = pt.t; ring = pt.ring;
+      t = pt.t; ring = pt.ring; col = pt.col;
       range = pt.range;
       reflectivity = pt.reflectivity; near_ir = pt.near_ir;
     }
@@ -298,17 +305,17 @@ struct Point_RNG15_RFL8_NIR8 : public _Point_RNG15_RFL8_NIR8 {
     inline Point_RNG15_RFL8_NIR8()
     {
       x = y = z = 0.0f; data[3] = 1.0f;
-      t = 0; ring = 0;
+      t = 0; ring = 0; col = 0;
       range = 0;
       reflectivity = 0; near_ir = 0;
     }
 
     inline const auto as_tuple() const {
-        return std::tie(x, y, z, t, ring, range, reflectivity, near_ir);
+        return std::tie(x, y, z, t, ring, col, range, reflectivity, near_ir);
     }
 
     inline auto as_tuple() {
-        return std::tie(x, y, z, t, ring, range, reflectivity, near_ir);
+        return std::tie(x, y, z, t, ring, col, range, reflectivity, near_ir);
     }
 
     template<size_t I>
@@ -328,6 +335,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point_RNG15_RFL8_NIR8,
     (float, z, z)
     (std::uint32_t, t, t)
     (std::uint16_t, ring, ring)
+    (std::uint16_t, col, col)
     (std::uint32_t, range, range)
     (std::uint16_t, reflectivity, reflectivity)
     (std::uint16_t, near_ir, near_ir)
@@ -366,6 +374,7 @@ struct EIGEN_ALIGN16 _Point_FUSA_RNG15_RFL8_NIR8_DUAL {
     PCL_ADD_POINT4D;
     uint32_t t;             // timestamp in nanoseconds relative to frame start
     uint16_t ring;          // equivalent to channel
+    uint16_t col;
     uint32_t range;
     uint8_t reflectivity;
     uint16_t near_ir;       // equivalent to ambient
@@ -377,7 +386,7 @@ struct Point_FUSA_RNG15_RFL8_NIR8_DUAL : public _Point_FUSA_RNG15_RFL8_NIR8_DUAL
     inline Point_FUSA_RNG15_RFL8_NIR8_DUAL(const _Point_FUSA_RNG15_RFL8_NIR8_DUAL& pt)
     {
       x = pt.x; y = pt.y; z = pt.z; data[3] = 1.0f;
-      t = pt.t; ring = pt.ring;
+      t = pt.t; ring = pt.ring; col = pt.col;
       range = pt.range;
       reflectivity = pt.reflectivity;
       near_ir = pt.near_ir;
@@ -386,18 +395,18 @@ struct Point_FUSA_RNG15_RFL8_NIR8_DUAL : public _Point_FUSA_RNG15_RFL8_NIR8_DUAL
     inline Point_FUSA_RNG15_RFL8_NIR8_DUAL()
     {
       x = y = z = 0.0f; data[3] = 1.0f;
-      t = 0; ring = 0;
+      t = 0; ring = 0; col = 0;
       range = 0;
       reflectivity = 0;
       near_ir = 0;
     }
 
     inline const auto as_tuple() const {
-        return std::tie(x, y, z, t, ring, range, reflectivity, near_ir);
+        return std::tie(x, y, z, t, ring, col, range, reflectivity, near_ir);
     }
 
     inline auto as_tuple() {
-        return std::tie(x, y, z, t, ring, range, reflectivity, near_ir);
+        return std::tie(x, y, z, t, ring, col, range, reflectivity, near_ir);
     }
 
     template<size_t I>
@@ -416,6 +425,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point_FUSA_RNG15_RFL8_NIR8_DUAL,
     (float, z, z)
     (std::uint32_t, t, t)
     (std::uint16_t, ring, ring)
+    (std::uint16_t, col, col)
     (std::uint32_t, range, range)
     (std::uint8_t, reflectivity, reflectivity)
     (std::uint16_t, near_ir, near_ir)

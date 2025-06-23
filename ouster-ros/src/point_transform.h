@@ -20,6 +20,7 @@ DEFINE_MEMBER_CHECKER(y);
 DEFINE_MEMBER_CHECKER(z);
 DEFINE_MEMBER_CHECKER(t);
 DEFINE_MEMBER_CHECKER(ring);
+DEFINE_MEMBER_CHECKER(col);
 DEFINE_MEMBER_CHECKER(intensity);
 DEFINE_MEMBER_CHECKER(ambient);
 DEFINE_MEMBER_CHECKER(range);
@@ -49,6 +50,17 @@ void transform(PointTGT& tgt_pt, const PointSRC& src_pt) {
     CondBinaryOp<has_ring_v<PointTGT> && !has_ring_v<PointSRC>>::run(
         tgt_pt, src_pt, [](auto& tgt_pt, const auto&) {
             tgt_pt.ring = static_cast<decltype(tgt_pt.ring)>(0);
+        }
+    );
+
+    // col
+    CondBinaryOp<has_col_v<PointTGT> && has_col_v<PointSRC>>::run(
+        tgt_pt, src_pt, [](auto& tgt_pt, const auto& src_pt) { tgt_pt.col = src_pt.col; }
+    );
+
+    CondBinaryOp<has_col_v<PointTGT> && !has_col_v<PointSRC>>::run(
+        tgt_pt, src_pt, [](auto& tgt_pt, const auto&) {
+            tgt_pt.col = static_cast<decltype(tgt_pt.col)>(0);
         }
     );
 
