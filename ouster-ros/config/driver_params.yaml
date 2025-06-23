@@ -56,7 +56,7 @@ ouster/os_driver:
     # point_cloud_frame[optional]: which frame of reference to use when
     # generating PointCloud2 or LaserScan messages, select between the values of
     # lidar_frame and sensor_frame.
-    point_cloud_frame: os_lidar
+    point_cloud_frame: os_sensor
     # pub_static_tf[optional]: when this flag is set to True, the driver will
     # broadcast the TF transforms for the imu/sensor/lidar frames. Prevent the
     # driver from broadcasting TF transforms by setting this parameter to False.
@@ -114,9 +114,9 @@ ouster/os_driver:
     # destagger[optional]: enable or disable point cloud destaggering, default enabled.
     destagger: true
     # min_range[optional]: minimum lidar range to consider (meters).
-    min_range: 1.0
+    min_range: 2.8
     # max_range[optional]: maximum lidar range to consider (meters).
-    max_range: 31.0
+    max_range: 35.0
     # v_reduction[optional]: vertical beam reduction; available options: {1, 2, 4, 8, 16}.
     v_reduction: 1
     # min_scan_valid_columns_ratio[optional]: The minimum ratio of valid columns for
