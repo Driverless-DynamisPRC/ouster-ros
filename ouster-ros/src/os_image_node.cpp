@@ -20,6 +20,8 @@
 #include "ouster_ros/visibility_control.h"
 #include "ouster_ros/os_processing_node_base.h"
 
+#include "impl/pixel_window.h"
+
 #include "lidar_packet_handler.h"
 #include "image_processor.h"
 
@@ -58,6 +60,20 @@ class OusterImage : public OusterProcessingNodeBase {
     }
 
     void create_publishers_subscribers(int n_returns) {
+        auto horizon_window_start = get_parameter("horizon_window_start").as_int();
+        auto horizon_window_end = get_parameter("horizon_window_end").as_int();
+
+        if (horizon_window_start < MIN_HOW || horizon_window_start > MAX_HOW ||
+            horizon_window_end < MIN_HOW || horizon_window_end > MAX_HOW) {
+            auto error_msg = "horizon window values must be between " +
+                        std::to_string(MIN_HOW) + " and " +
+                        std::to_string(MAX_HOW);
+            RCLCPP_FATAL_STREAM(get_logger(), error_msg);
+            throw std::runtime_error(error_msg);
+        }
+
+        auto [pixel_start, pixel_end] = ouster::horizon_to_pixel_window(
+            info.beam_altitude_angles, horizon_window_start, horizon_window_end);
 
         // TODO: avoid having to replicate the parameters: 
         // timestamp_mode, ptp_utc_tai_offset, use_system_default_qos in yet
@@ -114,8 +130,8 @@ class OusterImage : public OusterProcessingNodeBase {
         };
 
         lidar_packet_handler = LidarPacketHandler::create(
-            info, processors, timestamp_mode,
-            static_cast<int64_t>(ptp_utc_tai_offset * 1e+9),
+            info, processors, pixel_start, pixel_end,
+            timestamp_mode, static_cast<int64_t>(ptp_utc_tai_offset * 1e+9),
             min_scan_valid_columns_ratio);
         lidar_packet_sub = create_subscription<PacketMsg>(
                 "lidar_packets", selected_qos,

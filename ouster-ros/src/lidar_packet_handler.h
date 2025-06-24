@@ -68,6 +68,7 @@ class LidarPacketHandler {
    public:
     LidarPacketHandler(const sensor::sensor_info& info,
                        const std::vector<LidarScanProcessor>& handlers,
+                       uint64_t pixel_start, uint64_t pixel_end,
                        const std::string& timestamp_mode,
                        int64_t ptp_utc_tai_offset,
                        float min_scan_valid_columns_ratio)
@@ -76,7 +77,8 @@ class LidarPacketHandler {
           ptp_utc_tai_offset_(ptp_utc_tai_offset),
           min_scan_valid_columns_ratio_(min_scan_valid_columns_ratio) {
         // initialize lidar_scan processor and buffer
-        scan_batcher = std::make_unique<ouster::ScanBatcher>(info);
+        RCLCPP_INFO(rclcpp::get_logger("LidarPacketHandler"), "%ld %ld", pixel_start, pixel_end);
+        scan_batcher = std::make_unique<ouster::ScanBatcher>(info, pixel_start, pixel_end);
 
         lidar_scans.resize(LIDAR_SCAN_COUNT);
         mutexes.resize(LIDAR_SCAN_COUNT);
@@ -179,11 +181,12 @@ class LidarPacketHandler {
     static HandlerType create(
         const sensor::sensor_info& info,
         const std::vector<LidarScanProcessor>& handlers,
+        uint64_t pixel_start, uint64_t pixel_end,
         const std::string& timestamp_mode, int64_t ptp_utc_tai_offset,
         float min_scan_valid_columns_ratio) {
         auto handler = std::make_shared<LidarPacketHandler>(
-            info, handlers, timestamp_mode, ptp_utc_tai_offset,
-            min_scan_valid_columns_ratio);
+            info, handlers, pixel_start, pixel_end, timestamp_mode,
+            ptp_utc_tai_offset, min_scan_valid_columns_ratio);
         return [handler](const sensor::LidarPacket& lidar_packet) {
             if (handler->lidar_packet_accumlator(lidar_packet)) {
                 handler->ring_buffer_has_elements.notify_one();

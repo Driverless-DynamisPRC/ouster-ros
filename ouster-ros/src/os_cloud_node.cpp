@@ -19,6 +19,8 @@
 #include "ouster_ros/os_processing_node_base.h"
 #include "ouster_ros/visibility_control.h"
 
+#include "impl/pixel_window.h"
+
 #include "os_static_transforms_broadcaster.h"
 #include "imu_packet_handler.h"
 #include "lidar_packet_handler.h"
@@ -97,6 +99,22 @@ class OusterCloud : public OusterProcessingNodeBase {
         auto proc_mask = get_parameter("proc_mask").as_string();
         auto tokens = impl::parse_tokens(proc_mask, '|');
 
+        auto horizon_window_start = get_parameter("horizon_window_start").as_int();
+        auto horizon_window_end = get_parameter("horizon_window_end").as_int();
+
+        if (horizon_window_start < MIN_HOW || horizon_window_start > MAX_HOW ||
+            horizon_window_end < MIN_HOW || horizon_window_end > MAX_HOW) {
+            auto error_msg = "horizon window values must be between " +
+                        std::to_string(MIN_HOW) + " and " + std::to_string(MAX_HOW);
+            RCLCPP_FATAL_STREAM(get_logger(), error_msg);
+            throw std::runtime_error(error_msg);
+        }
+
+        auto [pixel_start, pixel_end] = ouster::horizon_to_pixel_window(
+                info.beam_altitude_angles,
+                horizon_window_start,
+                horizon_window_end);
+
         if (impl::check_token(tokens, "IMU")) {
             imu_pub =
                 create_publisher<sensor_msgs::msg::Imu>("imu", selected_qos);
@@ -164,7 +182,8 @@ class OusterCloud : public OusterProcessingNodeBase {
                 PointCloudProcessorFactory::create_point_cloud_processor(point_type,
                     info, tf_bcast.point_cloud_frame_id(),
                     tf_bcast.apply_lidar_to_sensor_transform(),
-                    organized, destagger, min_range, max_range, v_reduction,
+                    organized, destagger, pixel_start, pixel_end,
+                    min_range, max_range, v_reduction,
                     [this](PointCloudProcessor_OutputType msgs) {
                         for (size_t i = 0; i < msgs.size(); ++i)
                             lidar_pubs[i]->publish(*msgs[i]);
@@ -209,8 +228,8 @@ class OusterCloud : public OusterProcessingNodeBase {
 
         if (impl::check_token(tokens, "PCL") || impl::check_token(tokens, "SCAN")) {
             lidar_packet_handler = LidarPacketHandler::create(
-                info, processors, timestamp_mode,
-                static_cast<int64_t>(ptp_utc_tai_offset * 1e+9),
+                info, processors, pixel_start, pixel_end,
+                timestamp_mode, static_cast<int64_t>(ptp_utc_tai_offset * 1e+9),
                 min_scan_valid_columns_ratio);
         }
 

@@ -41,13 +41,16 @@ class PointCloudProcessor {
     PointCloudProcessor(const ouster::sensor::sensor_info& info,
                         const std::string& frame_id,
                         bool apply_lidar_to_sensor_transform,
+                        uint64_t pixel_start, uint64_t pixel_end,
                         uint32_t min_range, uint32_t max_range, int rows_step,
                         ScanToCloudFn scan_to_cloud_fn_,
                         PointCloudProcessor_PostProcessingFn post_processing_fn_)
         : frame(frame_id),
           pixel_shift_by_row(info.format.pixel_shift_by_row),
           cloud{info.format.columns_per_packet * ouster::get_expected_packets(info),
-                info.format.pixels_per_column / rows_step},
+                static_cast<size_t>(
+                    std::floor(static_cast<float>(pixel_end) / rows_step)
+                    - std::floor(static_cast<float>(pixel_start) / rows_step))},
           min_range_(min_range), max_range_(max_range),
           pc_msgs(get_n_returns(info)),
           scan_to_cloud_fn(scan_to_cloud_fn_),
@@ -68,8 +71,8 @@ class PointCloudProcessor {
         lut_direction = ouster::PointsF(cloud.width * cloud.height, 3);
         lut_offset = ouster::PointsF(cloud.width * cloud.height, 3);
 
-        for (size_t row = 0; row < cloud.height; ++row) {
-            const auto lut_idx = row * cloud.width;
+        for (size_t row = pixel_start; row < pixel_end; ++row) {
+            const auto lut_idx = (row - pixel_start) * cloud.width;
             const auto xyz_idx =
                 row * info.format.columns_per_frame + info.format.column_window.first;
 
@@ -115,11 +118,13 @@ class PointCloudProcessor {
     static LidarScanProcessor create(const ouster::sensor::sensor_info& info,
                                      const std::string& frame,
                                      bool apply_lidar_to_sensor_transform,
+                                     uint64_t pixel_start, uint64_t pixel_end,
                                      uint32_t min_range, uint32_t max_range,
                                      int rows_step, ScanToCloudFn scan_to_cloud_fn_,
                                      PointCloudProcessor_PostProcessingFn post_processing_fn) {
         auto handler = std::make_shared<PointCloudProcessor>(
             info, frame, apply_lidar_to_sensor_transform,
+            pixel_start, pixel_end,
             min_range, max_range, rows_step,
             scan_to_cloud_fn_, post_processing_fn);
 

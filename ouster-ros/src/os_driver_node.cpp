@@ -13,6 +13,8 @@
 #include "ouster_ros/os_ros.h"
 // clang-format on
 
+#include "impl/pixel_window.h"
+
 #include "os_sensor_node.h"
 
 #include "os_static_transforms_broadcaster.h"
@@ -64,6 +66,9 @@ class OusterDriver : public OusterSensor {
     virtual void create_publishers() override {
         auto proc_mask = get_parameter("proc_mask").as_string();
         auto tokens = impl::parse_tokens(proc_mask, '|');
+
+        auto [pixel_start, pixel_end] = ouster::horizon_to_pixel_window(
+            info.beam_altitude_angles, horizon_window.first, horizon_window.second);
 
         bool use_system_default_qos =
             get_parameter("use_system_default_qos").as_bool();
@@ -130,7 +135,8 @@ class OusterDriver : public OusterSensor {
                 PointCloudProcessorFactory::create_point_cloud_processor(point_type,
                     info, tf_bcast.point_cloud_frame_id(),
                     tf_bcast.apply_lidar_to_sensor_transform(),
-                    organized, destagger, min_range, max_range, v_reduction,
+                    organized, destagger, pixel_start, pixel_end,
+                    min_range, max_range, v_reduction,
                     [this](PointCloudProcessor_OutputType msgs) {
                         for (size_t i = 0; i < msgs.size(); ++i)
                             lidar_pubs[i]->publish(*msgs[i]);
@@ -216,8 +222,8 @@ class OusterDriver : public OusterSensor {
         if (impl::check_token(tokens, "PCL") || impl::check_token(tokens, "SCAN") ||
             impl::check_token(tokens, "IMG"))
             lidar_packet_handler = LidarPacketHandler::create(
-                info, processors, timestamp_mode,
-                static_cast<int64_t>(ptp_utc_tai_offset * 1e+9),
+                info, processors, pixel_start, pixel_end,
+                timestamp_mode, static_cast<int64_t>(ptp_utc_tai_offset * 1e+9),
                 min_scan_valid_columns_ratio);
 
         if (impl::check_token(tokens, "TLM")) {
