@@ -121,6 +121,7 @@ void scan_to_cloud_f(ouster_ros::Cloud<PointT>& cloud, PointS& staging_point,
                      const ouster::PointsF& points, uint64_t scan_ts,
                      const ouster::LidarScan& ls,
                      const std::vector<int>& pixel_shift_by_row,
+                     int row_offset, int col_offset,
                      bool organized = false, bool destagger = true,
                      int rows_step = 1) {
     auto ls_tuple = make_lidar_scan_tuple<0, N, PROFILE>(ls);
@@ -171,8 +172,8 @@ void scan_to_cloud_f(ouster_ros::Cloud<PointT>& cloud, PointS& staging_point,
             // not have a field to hold the timestamp or a ring for example the
             // case of pcl::PointXYZ or pcl::PointXYZI.
             pt.t = static_cast<uint32_t>(ts);
-            pt.ring = static_cast<uint16_t>(u);
-            pt.col = static_cast<uint16_t>(v);
+            pt.ring = static_cast<uint16_t>(u + row_offset);
+            pt.col = static_cast<uint16_t>(v + col_offset);
             copy_lidar_scan_fields_to_point<0>(pt, ls_tuple, src_idx);
             // only perform point transform operation when PointT, and PointS
             // don't match
