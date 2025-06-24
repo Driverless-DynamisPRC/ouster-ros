@@ -64,6 +64,7 @@ endif()
 
 add_library(ouster_ros_library SHARED
   src/os_ros.cpp
+  src/impl/pixel_window.cpp
 )
 
 set(ouster_ros_library_deps
