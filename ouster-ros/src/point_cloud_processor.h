@@ -14,9 +14,11 @@
 #include "ouster_ros/os_ros.h"
 // clang-format on
 
-#include "point_cloud_compose.h"
-#include "lidar_packet_handler.h"
 #include "impl/cartesian.h"
+#include "lidar_packet_handler.h"
+#include "point_cloud_compose.h"
+
+#include <ouster/impl/column_window.h>
 
 namespace ouster_ros {
 
@@ -44,7 +46,7 @@ class PointCloudProcessor {
                         PointCloudProcessor_PostProcessingFn post_processing_fn_)
         : frame(frame_id),
           pixel_shift_by_row(info.format.pixel_shift_by_row),
-          cloud{info.format.columns_per_frame,
+          cloud{info.format.columns_per_packet * ouster::get_expected_packets(info),
                 info.format.pixels_per_column / rows_step},
           min_range_(min_range), max_range_(max_range),
           pc_msgs(get_n_returns(info)),
@@ -55,7 +57,7 @@ class PointCloudProcessor {
         ouster::mat4d additional_transform =
             apply_lidar_to_sensor_transform ? info.lidar_to_sensor_transform
                                             : ouster::mat4d::Identity();
-        auto xyz_lut = ouster::make_xyz_lut(
+        const auto xyz_lut = ouster::make_xyz_lut(
             info.format.columns_per_frame, info.format.pixels_per_column,
             ouster::sensor::range_unit, info.beam_to_lidar_transform,
             additional_transform, info.beam_azimuth_angles,
@@ -63,8 +65,20 @@ class PointCloudProcessor {
         // The ouster_ros drive currently only uses single precision when it
         // produces the point cloud. So it isn't of a benefit to compute point
         // cloud xyz coordinates using double precision (for the time being).
-        lut_direction = xyz_lut.direction.cast<float>();
-        lut_offset = xyz_lut.offset.cast<float>();
+        lut_direction = ouster::PointsF(cloud.width * cloud.height, 3);
+        lut_offset = ouster::PointsF(cloud.width * cloud.height, 3);
+
+        for (size_t row = 0; row < cloud.height; ++row) {
+            const auto lut_idx = row * cloud.width;
+            const auto xyz_idx =
+                row * info.format.columns_per_frame + info.format.column_window.first;
+
+            lut_direction.middleRows(lut_idx, cloud.width) =
+                xyz_lut.direction.middleRows(xyz_idx, cloud.width).template cast<float>();
+            lut_offset.middleRows(lut_idx, cloud.width) =
+                xyz_lut.offset.middleRows(xyz_idx, cloud.width).template cast<float>();
+        }
+
         points = ouster::PointsF(lut_direction.rows(), lut_offset.cols());
     }
 
