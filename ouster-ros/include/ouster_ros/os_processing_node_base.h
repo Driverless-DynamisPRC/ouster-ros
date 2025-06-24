@@ -7,6 +7,8 @@
  *
  */
 
+#pragma once
+
 #include <ouster/types.h>
 
 #include <chrono>

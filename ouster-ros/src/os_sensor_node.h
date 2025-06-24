@@ -18,6 +18,7 @@
 #include <vector>
 
 #include <std_srvs/srv/empty.hpp>
+#include "ouster_sensor_msgs/msg/lidar_info.hpp"
 #include "ouster_sensor_msgs/msg/packet_msg.hpp"
 #include "ouster_sensor_msgs/srv/get_config.hpp"
 #include "ouster_sensor_msgs/srv/set_config.hpp"
@@ -88,6 +89,8 @@ class OusterSensor : public OusterSensorNodeBase {
 
     void create_set_config_service();
 
+  void publish_lidar_info(const sensor::sensor_info& info);
+
     std::shared_ptr<sensor::client> create_sensor_client(
         const std::string& hostname, const sensor::sensor_config& config);
 
@@ -141,6 +144,7 @@ class OusterSensor : public OusterSensorNodeBase {
     ouster_sensor_msgs::msg::PacketMsg imu_packet_msg;
     ouster::sensor::LidarPacket lidar_packet;
     ouster::sensor::ImuPacket imu_packet;
+    rclcpp::Publisher<ouster_sensor_msgs::msg::LidarInfo>::SharedPtr lidar_info_pub;
     rclcpp::Publisher<ouster_sensor_msgs::msg::PacketMsg>::SharedPtr lidar_packet_pub;
     rclcpp::Publisher<ouster_sensor_msgs::msg::PacketMsg>::SharedPtr imu_packet_pub;
     rclcpp::Service<std_srvs::srv::Empty>::SharedPtr reset_srv;

@@ -7,6 +7,8 @@
  *
  */
 
+#pragma once
+
 #include <chrono>
 
 #include <rclcpp/rclcpp.hpp>

@@ -9,12 +9,16 @@
 // prevent clang-format from altering the location of "ouster_ros/ros.h", the
 // header file needs to be the first include due to PCL_NO_PRECOMPILE flag
 // clang-format off
+#include "ouster/impl/build.h"
 #include "ouster_ros/os_ros.h"
 // clang-format on
 
 #include <chrono>
 
+#include "impl/pixel_window.h"
 #include "os_sensor_node.h"
+
+#include "ouster/impl/column_window.h"
 
 using ouster_sensor_msgs::msg::PacketMsg;
 using ouster_sensor_msgs::srv::GetConfig;
@@ -34,10 +38,13 @@ OusterSensor::OusterSensor(const std::string& name,
     declare_parameters();
     staged_config = parse_config_from_ros_parameters();
     attempt_reconnect = get_parameter("attempt_reconnect").as_bool();
-    dormant_period_between_reconnects = 
+    dormant_period_between_reconnects =
         get_parameter("dormant_period_between_reconnects").as_double();
     reconnect_attempts_available =
         get_parameter("max_failed_reconnect_attempts").as_int();
+
+    lidar_info_pub = create_publisher<ouster_sensor_msgs::msg::LidarInfo>(
+        "lidar_info", rclcpp::QoS(1).reliable().transient_local());
 
     bool auto_start = get_parameter("auto_start").as_bool();
 
@@ -408,6 +415,56 @@ void OusterSensor::create_set_config_service() {
     RCLCPP_INFO(get_logger(), "set_config service created");
 }
 
+void OusterSensor::publish_lidar_info(const sensor::sensor_info &info) {
+    ouster_sensor_msgs::msg::LidarInfo msg;
+    msg.sdk_version = ouster::SDK_VERSION_FULL;
+    msg.prod_line = info.prod_line;
+    msg.sn = info.sn;
+    msg.fw_rev = info.fw_rev;
+    msg.mode = sensor::to_string(info.mode);
+    msg.lidar_profile = sensor::to_string(info.format.udp_profile_lidar);
+
+    auto [pixel_start, pixel_end] = ouster::horizon_to_pixel_window(
+        info.beam_altitude_angles, horizon_window.first, horizon_window.second);
+
+    msg.width = info.format.columns_per_frame;
+    msg.height = info.format.pixels_per_column;
+
+    msg.beam_azimuth_angles.reserve(msg.width * msg.height);
+    msg.beam_altitude_angles.reserve(msg.width * msg.height);
+
+    if (info.beam_azimuth_angles.size() == info.format.pixels_per_column &&
+        info.beam_altitude_angles.size() == info.format.pixels_per_column) {
+        // OS sensor
+        const double azimuth_rad = M_PI * 2.0 / info.format.columns_per_frame;
+
+        // populate angles for each pixel
+        for (size_t u = 0; u < msg.height; u++) {
+            for (size_t v = 0; v < msg.width; v++) {
+                const auto encoder = 2.0 * M_PI - v * azimuth_rad;
+                const auto azimuth = -info.beam_azimuth_angles[u] * M_PI / 180.0;
+                msg.beam_azimuth_angles.push_back(encoder + azimuth);
+                msg.beam_altitude_angles.push_back(info.beam_altitude_angles[u] * M_PI / 180.0);
+            }
+        }
+
+    } else if (info.beam_azimuth_angles.size() == info.format.columns_per_frame * info.format.pixels_per_column &&
+               info.beam_altitude_angles.size() == info.format.columns_per_frame * info.format.pixels_per_column) {
+        // DF sensor
+        // populate angles for each pixel
+        for (size_t u = 0; u < msg.height; u++) {
+            for (size_t v = 0; v < msg.width; v++) {
+                size_t i = u * info.format.columns_per_frame + v;
+                msg.beam_azimuth_angles.push_back(info.beam_azimuth_angles[i] * M_PI / 180.0);
+                msg.beam_altitude_angles.push_back(info.beam_altitude_angles[i] * M_PI / 180.0);
+            }
+        }
+    }
+
+    lidar_info_pub->publish(msg);
+}
+
+
 std::shared_ptr<sensor::client> OusterSensor::create_sensor_client(
     const std::string& hostname, const sensor::sensor_config& config) {
 
@@ -690,6 +747,7 @@ void OusterSensor::on_metadata_updated(const sensor::sensor_info&) {}
 
 void OusterSensor::metadata_updated(const sensor::sensor_info& info) {
     display_lidar_info(info);
+    publish_lidar_info(info);
     on_metadata_updated(info);
 }
 

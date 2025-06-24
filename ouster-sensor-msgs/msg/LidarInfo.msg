@@ -8,8 +8,7 @@ string fw_rev
 string mode
 string lidar_profile
 
-uint32 col_start
+uint32 width
+uint32 height
 float32[] beam_azimuth_angles
-
-uint32 row_start
-float32[] beam_horizon_angles
+float32[] beam_altitude_angles
