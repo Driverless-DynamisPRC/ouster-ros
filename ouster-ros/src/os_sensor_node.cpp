@@ -43,6 +43,8 @@ OusterSensor::OusterSensor(const std::string& name,
     reconnect_attempts_available =
         get_parameter("max_failed_reconnect_attempts").as_int();
 
+    rclcpp::PublisherOptions lidar_info_pub_opts;
+    lidar_info_pub_opts.use_intra_process_comm = rclcpp::IntraProcessSetting::Disable;
     lidar_info_pub = create_publisher<ouster_sensor_msgs::msg::LidarInfo>(
         "lidar_info", rclcpp::QoS(1).reliable().transient_local());
 
