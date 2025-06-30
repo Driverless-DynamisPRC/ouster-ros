@@ -11,11 +11,10 @@ class PointCloudProcessorFactory {
     template <typename PointT>
     static typename PointCloudProcessor<PointT>::ScanToCloudFn
     make_scan_to_cloud_fn(const sensor::sensor_info& info,
-                          int row_offset, int col_offset,
                           bool organized, bool destagger, int rows_step) {
         switch (info.format.udp_profile_lidar) {
             case UDPProfileLidar::PROFILE_LIDAR_LEGACY:
-                return [row_offset, col_offset, organized, destagger, rows_step](
+                return [organized, destagger, rows_step](
                     ouster_ros::Cloud<PointT>& cloud,
                     const ouster::PointsF& points, uint64_t scan_ts,
                     const ouster::LidarScan& ls,
@@ -25,12 +24,12 @@ class PointCloudProcessorFactory {
                     Point_LEGACY staging_pt;
                     scan_to_cloud_f<Profile_LEGACY.size(), Profile_LEGACY>(
                         cloud, staging_pt, points, scan_ts, ls,
-                        pixel_shift_by_row, row_offset, col_offset,
-                        organized, destagger, rows_step);
+                        pixel_shift_by_row, organized,
+               destagger, rows_step);
                 };
 
             case UDPProfileLidar::PROFILE_RNG19_RFL8_SIG16_NIR16_DUAL:
-                return [row_offset, col_offset, organized, destagger, rows_step](
+                return [organized, destagger, rows_step](
                     ouster_ros::Cloud<PointT>& cloud,
                     const ouster::PointsF& points, uint64_t scan_ts,
                     const ouster::LidarScan& ls,
@@ -43,20 +42,20 @@ class PointCloudProcessorFactory {
                             Profile_RNG19_RFL8_SIG16_NIR16_DUAL.size(),
                             Profile_RNG19_RFL8_SIG16_NIR16_DUAL>(
                             cloud, staging_pt, points, scan_ts, ls,
-                            pixel_shift_by_row, row_offset, col_offset,
-                            organized, destagger, rows_step);
+                            pixel_shift_by_row, organized,
+                   destagger, rows_step);
                     } else {
                         scan_to_cloud_f<
                             Profile_RNG19_RFL8_SIG16_NIR16_DUAL_2ND_RETURN.size(),
                             Profile_RNG19_RFL8_SIG16_NIR16_DUAL_2ND_RETURN>(
                             cloud, staging_pt, points, scan_ts, ls,
-                            pixel_shift_by_row, row_offset, col_offset,
-                            organized, destagger, rows_step);
+                            pixel_shift_by_row, organized,
+                            destagger, rows_step);
                     }
                 };
 
             case UDPProfileLidar::PROFILE_RNG19_RFL8_SIG16_NIR16:
-                return [row_offset, col_offset, organized, destagger, rows_step](
+                return [organized, destagger, rows_step](
                     ouster_ros::Cloud<PointT>& cloud,
                     const ouster::PointsF& points, uint64_t scan_ts,
                     const ouster::LidarScan& ls,
@@ -68,12 +67,12 @@ class PointCloudProcessorFactory {
                         Profile_RNG19_RFL8_SIG16_NIR16.size(),
                         Profile_RNG19_RFL8_SIG16_NIR16>(
                             cloud, staging_pt, points, scan_ts, ls,
-                            pixel_shift_by_row, row_offset, col_offset,
-                            organized, destagger, rows_step);
+                            pixel_shift_by_row, organized,
+                   destagger, rows_step);
                 };
 
             case UDPProfileLidar::PROFILE_RNG15_RFL8_NIR8:
-                return [row_offset, col_offset, organized, destagger, rows_step](
+                return [organized, destagger, rows_step](
                     ouster_ros::Cloud<PointT>& cloud,
                     const ouster::PointsF& points, uint64_t scan_ts,
                     const ouster::LidarScan& ls,
@@ -85,12 +84,12 @@ class PointCloudProcessorFactory {
                         Profile_RNG15_RFL8_NIR8.size(),
                         Profile_RNG15_RFL8_NIR8>(
                         cloud, staging_pt, points, scan_ts, ls,
-                        pixel_shift_by_row, row_offset, col_offset,
-                        organized, destagger, rows_step);
+                        pixel_shift_by_row, organized,
+               destagger, rows_step);
                 };
 
             case UDPProfileLidar::PROFILE_FUSA_RNG15_RFL8_NIR8_DUAL:
-                return [row_offset, col_offset, organized, destagger, rows_step](
+                return [organized, destagger, rows_step](
                     ouster_ros::Cloud<PointT>& cloud,
                     const ouster::PointsF& points, uint64_t scan_ts,
                     const ouster::LidarScan& ls,
@@ -103,15 +102,15 @@ class PointCloudProcessorFactory {
                             Profile_FUSA_RNG15_RFL8_NIR8_DUAL.size(),
                             Profile_FUSA_RNG15_RFL8_NIR8_DUAL>(
                             cloud, staging_pt, points, scan_ts, ls,
-                            pixel_shift_by_row, row_offset, col_offset,
-                            organized, destagger, rows_step);
+                            pixel_shift_by_row, organized,
+                            destagger, rows_step);
                     } else {
                         scan_to_cloud_f<
                             Profile_FUSA_RNG15_RFL8_NIR8_DUAL_2ND_RETURN.size(),
                             Profile_FUSA_RNG15_RFL8_NIR8_DUAL_2ND_RETURN>(
                             cloud, staging_pt, points, scan_ts, ls,
-                            pixel_shift_by_row, row_offset, col_offset,
-                            organized, destagger, rows_step);
+                            pixel_shift_by_row, organized,
+                   destagger, rows_step);
                     }
                 };
 
@@ -129,8 +128,7 @@ class PointCloudProcessorFactory {
         uint32_t min_range, uint32_t max_range, int rows_step,
         PointCloudProcessor_PostProcessingFn post_processing_fn) {
         auto scan_to_cloud_fn = make_scan_to_cloud_fn<PointT>(
-            info, pixel_start, info.format.column_window.first,
-            organized, destagger, rows_step);
+            info, organized, destagger, rows_step);
         return PointCloudProcessor<PointT>::create(
             info, frame, apply_lidar_to_sensor_transform,
             pixel_start, pixel_end, min_range, max_range,

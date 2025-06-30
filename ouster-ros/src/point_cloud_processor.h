@@ -47,10 +47,9 @@ class PointCloudProcessor {
                         PointCloudProcessor_PostProcessingFn post_processing_fn_)
         : frame(frame_id),
           pixel_shift_by_row(info.format.pixel_shift_by_row),
-          cloud{info.format.columns_per_packet * ouster::get_expected_packets(info),
-                static_cast<size_t>(
-                    std::floor(static_cast<float>(pixel_end) / rows_step)
-                    - std::floor(static_cast<float>(pixel_start) / rows_step))},
+          cloud{static_cast<uint32_t>(info.format.column_window.second - info.format.column_window.first),
+                   static_cast<uint32_t>(
+                           std::floor(static_cast<float>(pixel_end) / rows_step) - std::floor(static_cast<float>(pixel_start) / rows_step))},
           min_range_(min_range), max_range_(max_range),
           pc_msgs(get_n_returns(info)),
           scan_to_cloud_fn(scan_to_cloud_fn_),
@@ -104,7 +103,7 @@ class PointCloudProcessor {
                                std::numeric_limits<float>::quiet_NaN());
 
             scan_to_cloud_fn(cloud, points, scan_ts, lidar_scan,
-                                        pixel_shift_by_row, i);
+                             pixel_shift_by_row, i);
 
             pcl_toROSMsg(cloud, *pc_msgs[i]);
             pc_msgs[i]->header.stamp = msg_ts;
