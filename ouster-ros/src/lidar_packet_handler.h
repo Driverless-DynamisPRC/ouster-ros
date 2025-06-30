@@ -77,7 +77,6 @@ class LidarPacketHandler {
           ptp_utc_tai_offset_(ptp_utc_tai_offset),
           min_scan_valid_columns_ratio_(min_scan_valid_columns_ratio) {
         // initialize lidar_scan processor and buffer
-        RCLCPP_INFO(rclcpp::get_logger("LidarPacketHandler"), "%ld %ld", pixel_start, pixel_end);
         scan_batcher = std::make_unique<ouster::ScanBatcher>(info, pixel_start, pixel_end);
 
         lidar_scans.resize(LIDAR_SCAN_COUNT);
