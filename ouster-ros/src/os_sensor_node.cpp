@@ -426,11 +426,12 @@ void OusterSensor::publish_lidar_info(const sensor::sensor_info &info) {
     msg.mode = sensor::to_string(info.mode);
     msg.lidar_profile = sensor::to_string(info.format.udp_profile_lidar);
 
-    auto [pixel_start, pixel_end] = ouster::horizon_to_pixel_window(
+    const auto &[col_start, col_end] = info.format.column_window;
+    const auto [pixel_start, pixel_end] = ouster::horizon_to_pixel_window(
         info.beam_altitude_angles, horizon_window.first, horizon_window.second);
 
-    msg.width = info.format.columns_per_frame;
-    msg.height = info.format.pixels_per_column;
+    msg.width = col_end - col_start;
+    msg.height = pixel_end - pixel_start;
 
     msg.beam_azimuth_angles.reserve(msg.width * msg.height);
     msg.beam_altitude_angles.reserve(msg.width * msg.height);
@@ -441,8 +442,8 @@ void OusterSensor::publish_lidar_info(const sensor::sensor_info &info) {
         const double azimuth_rad = M_PI * 2.0 / info.format.columns_per_frame;
 
         // populate angles for each pixel
-        for (size_t u = 0; u < msg.height; u++) {
-            for (size_t v = 0; v < msg.width; v++) {
+        for (size_t u = pixel_start; u < pixel_end; u++) {
+            for (size_t v = col_start; v < col_end; v++) {
                 const auto encoder = 2.0 * M_PI - v * azimuth_rad;
                 const auto azimuth = -info.beam_azimuth_angles[u] * M_PI / 180.0;
                 msg.beam_azimuth_angles.push_back(encoder + azimuth);
@@ -454,8 +455,8 @@ void OusterSensor::publish_lidar_info(const sensor::sensor_info &info) {
                info.beam_altitude_angles.size() == info.format.columns_per_frame * info.format.pixels_per_column) {
         // DF sensor
         // populate angles for each pixel
-        for (size_t u = 0; u < msg.height; u++) {
-            for (size_t v = 0; v < msg.width; v++) {
+        for (size_t u = pixel_start; u < pixel_end; u++) {
+            for (size_t v = col_start; v < col_end; v++) {
                 size_t i = u * info.format.columns_per_frame + v;
                 msg.beam_azimuth_angles.push_back(info.beam_azimuth_angles[i] * M_PI / 180.0);
                 msg.beam_altitude_angles.push_back(info.beam_altitude_angles[i] * M_PI / 180.0);
