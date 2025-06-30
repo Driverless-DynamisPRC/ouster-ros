@@ -98,9 +98,9 @@ ouster/os_driver:
     # azimuth_window_end[optional]: values range [0, 360000] millidegrees
     azimuth_window_end: 270000
     # horizon_window_start[optional]: values range [-180000, +180000] millidegrees
-    horizon_window_start: -180000
+    horizon_window_start: +180000
     # horizon_window_end[optional]: values range [-180000, +180000] millidegrees
-    horizon_window_end: +180000
+    horizon_window_end: -180000
     # persist_config[optional]: request the sensor to persist settings
     persist_config: false
     # attempt_config[optional]: attempting to reconnect to the sensor after
@@ -118,7 +118,7 @@ ouster/os_driver:
     # destagger[optional]: enable or disable point cloud destaggering, default enabled.
     destagger: true
     # min_range[optional]: minimum lidar range to consider (meters).
-    min_range: 2.8
+    min_range: 1.0
     # max_range[optional]: maximum lidar range to consider (meters).
     max_range: 35.0
     # v_reduction[optional]: vertical beam reduction; available options: {1, 2, 4, 8, 16}.
