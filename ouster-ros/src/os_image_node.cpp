@@ -121,7 +121,7 @@ class OusterImage : public OusterProcessingNodeBase {
 
         std::vector<LidarScanProcessor> processors {
             ImageProcessor::create(
-                info, "os_lidar", /*TODO: tf_bcast.point_cloud_frame_id()*/
+                info, "os_lidar", pixel_start, pixel_end, /*TODO: tf_bcast.point_cloud_frame_id()*/
                 [this](ImageProcessor::OutputType msgs) {
                     for (auto it = msgs.begin(); it != msgs.end(); ++it) {
                         image_pubs[it->first]->publish(*it->second);

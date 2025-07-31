@@ -25,6 +25,9 @@
 #include "image_processor.h"
 #include "point_cloud_processor_factory.h"
 #include "telemetry_handler.h"
+#include "trigger_handler.h"
+
+#include <std_srvs/srv/trigger.hpp>
 
 namespace ouster_ros {
 
@@ -50,6 +53,8 @@ class OusterDriver : public OusterSensor {
         declare_parameter("max_range", 1000.0);
         declare_parameter("v_reduction", 1);
         declare_parameter("min_scan_valid_columns_ratio", 0.0);
+        declare_parameter("trigger_srv", "/trigger");
+        declare_parameter("fire_angle", 0.0);
     }
 
     ~OusterDriver() override {
@@ -98,6 +103,20 @@ class OusterDriver : public OusterSensor {
         int num_returns = get_n_returns(info);
 
         std::vector<LidarScanProcessor> processors;
+
+        if (impl::check_token(tokens, "TRG")) {
+            auto trigger_srv = get_parameter("trigger_srv").as_string();
+            auto fire_angle = get_parameter("fire_angle").as_double();
+            trigger_client = create_client<std_srvs::srv::Trigger>(trigger_srv);
+            trigger_req = std::make_shared<std_srvs::srv::Trigger::Request>();
+
+            const auto fire_column = static_cast<uint32_t>(std::floor(fire_angle / (360.0 / 2048)));
+
+            trigger_handler = TriggerHandler::create(info, fire_column, [this] {
+                trigger_client->async_send_request(trigger_req);
+            });
+        }
+
         if (impl::check_token(tokens, "PCL")) {
             lidar_pubs.resize(num_returns);
             for (int i = 0; i < num_returns; ++i) {
@@ -211,7 +230,7 @@ class OusterDriver : public OusterSensor {
             }
 
             processors.push_back(ImageProcessor::create(
-                info, tf_bcast.point_cloud_frame_id(),
+                info, tf_bcast.point_cloud_frame_id(), pixel_start, pixel_end,
                 [this](ImageProcessor::OutputType msgs) {
                     for (auto it = msgs.begin(); it != msgs.end(); ++it) {
                         image_pubs[it->first]->publish(*it->second);
@@ -245,6 +264,9 @@ class OusterDriver : public OusterSensor {
             auto telemetry = telemetry_handler(lidar_packet);
             telemetry_pub->publish(telemetry);
         }
+
+        if (trigger_handler)
+            trigger_handler(lidar_packet);
 
         if (lidar_packet_handler)
             lidar_packet_handler(lidar_packet);
@@ -288,7 +310,10 @@ class OusterDriver : public OusterSensor {
     bool publish_raw = false;
 
     rclcpp::Publisher<ouster_sensor_msgs::msg::Telemetry>::SharedPtr telemetry_pub;
+    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr trigger_client;
+    std_srvs::srv::Trigger::Request::SharedPtr trigger_req;
     TelemetryHandler::HandlerType telemetry_handler;
+    TriggerHandler::HandlerType trigger_handler;
 };
 
 }  // namespace ouster_ros

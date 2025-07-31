@@ -433,8 +433,16 @@ void OusterSensor::publish_lidar_info(const sensor::sensor_info &info) {
     msg.width = col_end - col_start;
     msg.height = pixel_end - pixel_start;
 
+    const auto azimuth_window = info.config.azimuth_window.value_or(std::make_pair(MIN_AZW, MAX_AZW));
+    msg.beam_azimuth_start = azimuth_window.first;
+    msg.beam_azimuth_end = azimuth_window.second;
+
+    // const auto horizon_window = horizon_window;
+    msg.beam_horizon_start = horizon_window.first;
+    msg.beam_horizon_end = horizon_window.second;
+
     msg.beam_azimuth_angles.reserve(msg.width * msg.height);
-    msg.beam_altitude_angles.reserve(msg.width * msg.height);
+    msg.beam_horizon_angles.reserve(msg.width * msg.height);
 
     if (info.beam_azimuth_angles.size() == info.format.pixels_per_column &&
         info.beam_altitude_angles.size() == info.format.pixels_per_column) {
@@ -447,7 +455,7 @@ void OusterSensor::publish_lidar_info(const sensor::sensor_info &info) {
                 const auto encoder = 2.0 * M_PI - v * azimuth_rad;
                 const auto azimuth = -info.beam_azimuth_angles[u] * M_PI / 180.0;
                 msg.beam_azimuth_angles.push_back(encoder + azimuth);
-                msg.beam_altitude_angles.push_back(info.beam_altitude_angles[u] * M_PI / 180.0);
+                msg.beam_horizon_angles.push_back(info.beam_altitude_angles[u] * M_PI / 180.0);
             }
         }
 
@@ -459,7 +467,7 @@ void OusterSensor::publish_lidar_info(const sensor::sensor_info &info) {
             for (size_t v = col_start; v < col_end; v++) {
                 size_t i = u * info.format.columns_per_frame + v;
                 msg.beam_azimuth_angles.push_back(info.beam_azimuth_angles[i] * M_PI / 180.0);
-                msg.beam_altitude_angles.push_back(info.beam_altitude_angles[i] * M_PI / 180.0);
+                msg.beam_horizon_angles.push_back(info.beam_altitude_angles[i] * M_PI / 180.0);
             }
         }
     }

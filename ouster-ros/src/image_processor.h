@@ -31,10 +31,15 @@ class ImageProcessor {
 
    public:
     ImageProcessor(const ouster::sensor::sensor_info& info,
-                   const std::string& frame_id, PostProcessingFn func)
-        : frame(frame_id), post_processing_fn(func), info_(info) {
-        uint32_t H = info.format.pixels_per_column;
-        uint32_t W = info.format.columns_per_frame;
+                   const std::string& frame_id,
+                   uint64_t pixel_start, uint64_t pixel_end,
+                   PostProcessingFn func)
+        : frame(frame_id), post_processing_fn(func), info_(info),
+          column_start_(info.format.column_window.first),
+          column_end_(info.format.column_window.second),
+          pixel_start_(pixel_start), pixel_end_(pixel_end) {
+        uint32_t H = pixel_end_ - pixel_start_;
+        uint32_t W = column_end_ - column_start_;
 
         image_msgs[sensor::ChanField::RANGE] =
             std::make_shared<sensor_msgs::msg::Image>();
@@ -107,8 +112,8 @@ class ImageProcessor {
             impl::suitable_return(sensor::ChanField::NEAR_IR, !first),
             lidar_scan);
 
-        uint32_t H = info_.format.pixels_per_column;
-        uint32_t W = info_.format.columns_per_frame;
+        uint32_t H = pixel_end_ - pixel_start_;
+        uint32_t W = column_end_ - column_start_;
 
         // views into message data
         auto range_image_map = Eigen::Map<ouster::img_t<pixel_type>>(
@@ -147,7 +152,7 @@ class ImageProcessor {
         // copy data out of Cloud message, with destaggering
         for (size_t u = 0; u < H; u++) {
             for (size_t v = 0; v < W; v++) {
-                const size_t vv = (v + W - px_offset[u]) % W;
+                const size_t vv = (v + W - px_offset[pixel_start_ + u]) % W;
                 const size_t idx = u * W + vv;
                 // TODO: re-examine this truncation later
                 // 16 bit img: use 4mm resolution and throw out returns > 260m
@@ -178,8 +183,9 @@ class ImageProcessor {
    public:
     static LidarScanProcessor create(const ouster::sensor::sensor_info& info,
                                      const std::string& frame,
+                                     uint64_t pixel_start, uint64_t pixel_end,
                                      PostProcessingFn func) {
-        auto handler = std::make_shared<ImageProcessor>(info, frame, func);
+        auto handler = std::make_shared<ImageProcessor>(info, frame, pixel_start, pixel_end, func);
         return [handler](const ouster::LidarScan& lidar_scan, uint64_t scan_ts,
                          const rclcpp::Time& msg_ts) {
             handler->process(lidar_scan, scan_ts, msg_ts);
@@ -191,6 +197,8 @@ class ImageProcessor {
     OutputType image_msgs;
     PostProcessingFn post_processing_fn;
     sensor::sensor_info info_;
+    uint64_t column_start_, column_end_;
+    uint64_t pixel_start_, pixel_end_;
 
     viz::AutoExposure nearir_ae, signal_ae, reflec_ae;
     viz::BeamUniformityCorrector nearir_buc;

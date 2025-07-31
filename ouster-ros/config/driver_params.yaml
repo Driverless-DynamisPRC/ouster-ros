@@ -63,7 +63,7 @@ ouster/os_driver:
     pub_static_tf: true
     # proc_mask[optional]: use any combination of the 6 flags IMG, PCL, IMU, SCAN
     # RAW and TLM to enable or disable their respective messages.
-    proc_mask: IMU|PCL|TLM
+    proc_mask: IMU|PCL|TLM|TRG
     # scan_ring[optional]: use this parameter in conjunction with the SCAN flag
     # to select which beam of the LidarScan to use when producing the LaserScan
     # message. Choose a value the range [0, sensor_beams_count).
@@ -98,9 +98,9 @@ ouster/os_driver:
     # azimuth_window_end[optional]: values range [0, 360000] millidegrees
     azimuth_window_end: 270000
     # horizon_window_start[optional]: values range [-180000, +180000] millidegrees
-    horizon_window_start: +180000
+    horizon_window_start: -180000
     # horizon_window_end[optional]: values range [-180000, +180000] millidegrees
-    horizon_window_end: -180000
+    horizon_window_end: +180000
     # persist_config[optional]: request the sensor to persist settings
     persist_config: false
     # attempt_config[optional]: attempting to reconnect to the sensor after
@@ -126,3 +126,6 @@ ouster/os_driver:
     # min_scan_valid_columns_ratio[optional]: The minimum ratio of valid columns for
     # processing the LidarScan [0, 1]. default is 0%
     min_scan_valid_columns_ratio: 0.0
+
+    trigger_srv: /vimbax_camera/trigger
+    fire_angle: 90.0
