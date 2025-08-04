@@ -27,7 +27,7 @@
 #include "telemetry_handler.h"
 #include "trigger_handler.h"
 
-#include <std_srvs/srv/trigger.hpp>
+#include <std_msgs/msg/empty.hpp>
 
 namespace ouster_ros {
 
@@ -53,7 +53,7 @@ class OusterDriver : public OusterSensor {
         declare_parameter("max_range", 1000.0);
         declare_parameter("v_reduction", 1);
         declare_parameter("min_scan_valid_columns_ratio", 0.0);
-        declare_parameter("trigger_srv", "/trigger");
+        declare_parameter("trigger_topic", "/trigger");
         declare_parameter("fire_angle", 0.0);
     }
 
@@ -105,15 +105,17 @@ class OusterDriver : public OusterSensor {
         std::vector<LidarScanProcessor> processors;
 
         if (impl::check_token(tokens, "TRG")) {
-            auto trigger_srv = get_parameter("trigger_srv").as_string();
+            auto trigger_topic = get_parameter("trigger_topic").as_string();
             auto fire_angle = get_parameter("fire_angle").as_double();
-            trigger_client = create_client<std_srvs::srv::Trigger>(trigger_srv);
-            trigger_req = std::make_shared<std_srvs::srv::Trigger::Request>();
+            trigger_pub = create_publisher<std_msgs::msg::Empty>(
+                trigger_topic,
+                rclcpp::QoS(1).reliable());
 
-            const auto fire_column = static_cast<uint32_t>(std::floor(fire_angle / (360.0 / 2048)));
+            const auto col_angle_step = 360.0 / sensor::n_cols_of_lidar_mode(info.mode);
+            const auto fire_column = static_cast<uint32_t>(std::floor(fire_angle / col_angle_step));
 
             trigger_handler = TriggerHandler::create(info, fire_column, [this] {
-                trigger_client->async_send_request(trigger_req);
+                trigger_pub->publish(std_msgs::msg::Empty());
             });
         }
 
@@ -310,8 +312,7 @@ class OusterDriver : public OusterSensor {
     bool publish_raw = false;
 
     rclcpp::Publisher<ouster_sensor_msgs::msg::Telemetry>::SharedPtr telemetry_pub;
-    rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr trigger_client;
-    std_srvs::srv::Trigger::Request::SharedPtr trigger_req;
+    rclcpp::Publisher<std_msgs::msg::Empty>::SharedPtr trigger_pub;
     TelemetryHandler::HandlerType telemetry_handler;
     TriggerHandler::HandlerType trigger_handler;
 };
