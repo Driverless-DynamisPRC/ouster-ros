@@ -127,5 +127,5 @@ ouster/os_driver:
     # processing the LidarScan [0, 1]. default is 0%
     min_scan_valid_columns_ratio: 0.0
 
-    trigger_topic: /vimbax_camera/trigger
-    fire_angle: 90.0
+    trigger_srv: /vimbax_camera/trigger
+    fire_angle: 225.0
