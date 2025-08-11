@@ -128,4 +128,4 @@ ouster/os_driver:
     min_scan_valid_columns_ratio: 0.0
 
     trigger_srv: /vimbax_camera/trigger
-    fire_angle: 225.0
+    fire_angle: 90.0
